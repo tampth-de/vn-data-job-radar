@@ -1,0 +1,34 @@
+{
+  "_comment": "Synthetic sample. Job 1001 also matches the AI keyword: it must be deduplicated.",
+  "data": [
+    {
+      "id": 1001,
+      "title": "Senior Data Engineer (Spark, Airflow)",
+      "company": {"id": 501, "display_name": "Acme Data JSC", "slug": "acme-data"},
+      "salary": {"is_negotiable": "0", "min": "3*******", "max": "5*******", "currency": "VND", "unit": "MONTH", "value": "3******* - 5******* VND", "min_estimate": 0, "max_estimate": 0},
+      "skills_arr": ["Python", "Spark", "Airflow", "SQL"],
+      "addresses": {"address_region_array": ["Thành phố Hồ Chí Minh"]},
+      "job_levels_str": "Chuyên viên cấp cao",
+      "experiences_str": "3 năm, 5 năm",
+      "job_types_str": "Trực tiếp",
+      "published": {"date": "20-12-2025"},
+      "refreshed": {"date": "30-12-2025"},
+      "detail_url": "https://topdev.vn/viec-lam/example-1001"
+    },
+    {
+      "id": 1004,
+      "title": "AI Engineer (LLM)",
+      "company": {"id": 504, "display_name": "Delta AI", "slug": "delta-ai"},
+      "salary": {"is_negotiable": "0", "min": "2***", "max": "3***", "currency": "USD", "unit": "MONTH", "value": "2*** - 3*** USD", "min_estimate": 0, "max_estimate": 0},
+      "skills_arr": ["Python", "LLM"],
+      "addresses": {"address_region_array": ["Thành phố Đà Nẵng"]},
+      "job_levels_str": "Chuyên viên",
+      "experiences_str": "2 năm",
+      "job_types_str": "Trực tiếp",
+      "published": {"date": "30-12-2025"},
+      "refreshed": {"date": "30-12-2025"},
+      "detail_url": "https://topdev.vn/viec-lam/example-1004"
+    }
+  ],
+  "meta": {"total": 2, "current_page": 1, "last_page": 1}
+}

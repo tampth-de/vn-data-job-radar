@@ -1,5 +1,8 @@
 # Vietnam Data/AI Job Radar
 
+[![CI](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/ci.yml)
+[![Daily ingest](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/daily_ingest.yml/badge.svg)](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/daily_ingest.yml)
+
 An end-to-end batch data pipeline that tracks the Data & AI job market in Vietnam:
 which skills are in demand, how salaries vary by seniority and city, and how the
 market changes week over week.
@@ -93,12 +96,30 @@ cd dbt && dbt build --profiles-dir .   # seeds, models and tests
 python -m pytest                       # unit tests
 ```
 
-## Scheduling
+## Scheduling and data quality
 
-A GitHub Actions workflow ([daily_ingest.yml](.github/workflows/daily_ingest.yml))
-runs every day at 08:00 Vietnam time: it runs the unit tests, fetches new data and
-commits the raw files to a separate **private** data repository (via a deploy key
-scoped to that repo only), so scraped content is never published in this public repo.
+**Daily** ([daily_ingest.yml](.github/workflows/daily_ingest.yml), 08:00 Vietnam time):
+
+1. unit tests → fetch TopDev → commit raw files to the **private** data repo
+   (deploy key scoped to that repo only, so scraped content never lands in this public repo)
+2. load the **full history** into a throwaway PostgreSQL service container
+3. `dbt build` with production thresholds: all model tests plus a health check that
+   fails if the latest run found fewer than 10 jobs or is older than 2 days
+   (a sudden drop usually means the site changed or blocked us)
+4. publish an aggregated summary (active jobs, role families, top skills) on the run page
+
+A failed check turns the run red and GitHub emails the owner. Raw data is always
+committed before validation, so nothing is lost when a check fails.
+
+**On every push** ([ci.yml](.github/workflows/ci.yml)): unit tests, then the whole
+pipeline end to end on synthetic fixtures ([tests/fixtures/raw](tests/fixtures/raw)):
+load → `dbt build` → assertions on the marts (dedup, lifecycle, classification,
+masked salary ranges, skill normalization).
+
+| Layer | Tests |
+|---|---|
+| Python | 10 unit tests (paging, retries, idempotency, HTML parsing), 7 end-to-end tests |
+| dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, ingestion health check |
 
 ## Roadmap
 
@@ -111,6 +132,6 @@ scoped to that repo only), so scraped content is never published in this public 
 - [x] Job lifecycle: first seen / last seen / active
 - [ ] Track attribute changes over time (SCD2 with dbt snapshots)
 - [ ] Skill synonym mapping (e.g. "postgres" = "postgresql")
-- [ ] dbt build + data quality checks in CI
+- [x] CI (end-to-end on fixtures) + daily data quality checks on real data
 - [ ] Airflow orchestration
 - [ ] Metabase dashboard

@@ -23,6 +23,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Throwaway warehouse used to validate the full history after each ingest.
+    services:
+      warehouse:
+        image: postgres:17
+        env:
+          POSTGRES_USER: radar
+          POSTGRES_PASSWORD: radar
+          POSTGRES_DB: radar
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U radar -d radar"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      WAREHOUSE_HOST: localhost
+      WAREHOUSE_PORT: "5433"
+      WAREHOUSE_USER: radar
+      WAREHOUSE_PASSWORD: radar
+      WAREHOUSE_DB: radar
+
     steps:
       - name: Check out code
         uses: actions/checkout@v7
@@ -70,3 +91,21 @@ jobs:
           fi
           git commit -m "ingest: $(date -u +%Y-%m-%d)"
           git push
+
+      # Raw data is committed first (bronze is kept no matter what), then the whole
+      # history is rebuilt and checked. A failed check turns the run red and GitHub
+      # emails the repo owner.
+      - name: Load full history into the warehouse
+        id: load
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: python -m load.topdev
+
+      - name: dbt build + data quality checks
+        id: dbt
+        if: ${{ !cancelled() && steps.load.outcome == 'success' }}
+        working-directory: dbt
+        run: dbt build --profiles-dir . --vars '{min_daily_jobs: 10, max_data_age_days: 2}'
+
+      - name: Publish daily summary
+        if: ${{ !cancelled() && steps.dbt.outcome == 'success' }}
+        run: python -m load.summary >> "$GITHUB_STEP_SUMMARY"

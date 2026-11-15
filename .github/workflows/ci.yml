@@ -1,0 +1,66 @@
+# CI: on every push / pull request, test the code and the dbt project end to end
+# against synthetic fixture data (no scraped data in this public repo).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      warehouse:
+        image: postgres:17
+        env:
+          POSTGRES_USER: radar
+          POSTGRES_PASSWORD: radar
+          POSTGRES_DB: radar
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U radar -d radar"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      WAREHOUSE_HOST: localhost
+      WAREHOUSE_PORT: "5433"
+      WAREHOUSE_USER: radar
+      WAREHOUSE_PASSWORD: radar
+      WAREHOUSE_DB: radar
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit tests
+        run: python -m pytest -q
+
+      - name: Load fixture data into the warehouse
+        run: python -m load.topdev --raw-root tests/fixtures/raw
+
+      - name: dbt build (seeds, models, data tests)
+        working-directory: dbt
+        run: dbt build --profiles-dir .
+
+      - name: End-to-end tests on the marts
+        env:
+          RUN_INTEGRATION: "1"
+        run: python -m pytest -q tests/test_pipeline_integration.py

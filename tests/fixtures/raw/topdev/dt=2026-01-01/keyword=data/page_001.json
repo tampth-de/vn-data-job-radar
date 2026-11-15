@@ -1,0 +1,48 @@
+{
+  "_comment": "Synthetic sample mirroring the TopDev API shape. All values are made up.",
+  "data": [
+    {
+      "id": 1001,
+      "title": "Senior Data Engineer (Spark, Airflow)",
+      "company": {"id": 501, "display_name": "Acme Data JSC", "slug": "acme-data"},
+      "salary": {"is_negotiable": "0", "min": "3*******", "max": "5*******", "currency": "VND", "unit": "MONTH", "value": "3******* - 5******* VND", "min_estimate": 0, "max_estimate": 0},
+      "skills_arr": ["Python", "Spark", "Airflow", "SQL"],
+      "addresses": {"address_region_array": ["Thành phố Hồ Chí Minh"]},
+      "job_levels_str": "Chuyên viên cấp cao",
+      "experiences_str": "3 năm, 5 năm",
+      "job_types_str": "Trực tiếp",
+      "published": {"date": "20-12-2025"},
+      "refreshed": {"date": "30-12-2025"},
+      "detail_url": "https://topdev.vn/viec-lam/example-1001"
+    },
+    {
+      "id": 1002,
+      "title": "Data Analyst (Power BI)",
+      "company": {"id": 502, "display_name": "Beta Retail", "slug": "beta-retail"},
+      "salary": {"is_negotiable": 1, "min": "*", "max": "*", "currency": "VND", "unit": "MONTH", "value": "", "min_estimate": 15000000, "max_estimate": 20000000},
+      "skills_arr": ["SQL", "Power BI", " python "],
+      "addresses": {"address_region_array": ["Thành phố Hà Nội"]},
+      "job_levels_str": "Nhân viên, Chuyên viên",
+      "experiences_str": "Không yêu cầu",
+      "job_types_str": "Từ xa",
+      "published": {"date": "28-12-2025"},
+      "refreshed": {"date": "31-12-2025"},
+      "detail_url": "https://topdev.vn/viec-lam/example-1002"
+    },
+    {
+      "id": 1003,
+      "title": "Nhân Viên Telesales - Data Có Sẵn",
+      "company": {"id": 503, "display_name": "Gamma Sales", "slug": "gamma-sales"},
+      "salary": {"is_negotiable": "0", "min": "0", "max": "2*******", "currency": "VND", "unit": "MONTH", "value": "Lên tới 2******* VND", "min_estimate": 0, "max_estimate": 0},
+      "skills_arr": ["Sales", "Telesales"],
+      "addresses": {"address_region_array": ["Thành phố Hà Nội"]},
+      "job_levels_str": "Nhân viên",
+      "experiences_str": "1 năm",
+      "job_types_str": "Trực tiếp",
+      "published": {"date": "29-12-2025"},
+      "refreshed": {"date": "29-12-2025"},
+      "detail_url": "https://topdev.vn/viec-lam/example-1003"
+    }
+  ],
+  "meta": {"total": 3, "current_page": 1, "last_page": 1}
+}

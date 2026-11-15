@@ -103,6 +103,13 @@ def load(raw_root: Path | None = None) -> dict:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--raw-root", type=Path, default=None,
+                        help="root of the raw lake (default: data/raw). CI uses tests/fixtures/raw")
+    args = parser.parse_args()
+
     setup_logging()
-    result = load()
+    result = load(args.raw_root)
     log.info("Done: %d partitions, %d rows", len(result), sum(result.values()))
