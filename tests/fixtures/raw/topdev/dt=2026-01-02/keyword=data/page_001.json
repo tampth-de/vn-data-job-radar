@@ -1,12 +1,12 @@
 {
-  "_comment": "Synthetic sample, day 2: job 1003 disappeared (closed), job 1001 is still open.",
+  "_comment": "Synthetic sample, day 2: job 1003 disappeared (closed); job 1001 raised its salary and changed skills (new SCD2 version); job 1002 only reordered its skills (no new version).",
   "data": [
     {
       "id": 1001,
       "title": "Senior Data Engineer (Spark, Airflow)",
       "company": {"id": 501, "display_name": "Acme Data JSC", "slug": "acme-data"},
-      "salary": {"is_negotiable": "0", "min": "3*******", "max": "5*******", "currency": "VND", "unit": "MONTH", "value": "3******* - 5******* VND", "min_estimate": 0, "max_estimate": 0},
-      "skills_arr": ["Python", "Spark", "Airflow", "SQL"],
+      "salary": {"is_negotiable": "0", "min": "4*******", "max": "6*******", "currency": "VND", "unit": "MONTH", "value": "4******* - 6******* VND", "min_estimate": 0, "max_estimate": 0},
+      "skills_arr": ["Python", "PySpark", "Airflow", "SQL", "Postgres"],
       "addresses": {"address_region_array": ["Thành phố Hồ Chí Minh"]},
       "job_levels_str": "Chuyên viên cấp cao",
       "experiences_str": "3 năm, 5 năm",
@@ -20,7 +20,7 @@
       "title": "Data Analyst (Power BI)",
       "company": {"id": 502, "display_name": "Beta Retail", "slug": "beta-retail"},
       "salary": {"is_negotiable": 1, "min": "*", "max": "*", "currency": "VND", "unit": "MONTH", "value": "", "min_estimate": 15000000, "max_estimate": 20000000},
-      "skills_arr": ["SQL", "Power BI", " python "],
+      "skills_arr": [" python ", "Power BI", "SQL"],
       "addresses": {"address_region_array": ["Thành phố Hà Nội"]},
       "job_levels_str": "Nhân viên, Chuyên viên",
       "experiences_str": "Không yêu cầu",

@@ -1,10 +1,11 @@
--- One row per (job, skill). Skill names are normalized to lower case so that
--- "Python", "python " and "PYTHON" count as the same skill.
+-- One row per (job, canonical skill), using each job's most recent snapshot.
 
-select distinct
-    f.source,
-    f.job_id,
-    lower(trim(s.skill_raw)) as skill
-from {{ ref('fct_job_postings') }} f
-cross join lateral unnest(f.skills) as s(skill_raw)
-where trim(s.skill_raw) <> ''
+select
+    'topdev' as source,
+    s.job_id,
+    s.skill,
+    s.skill_category
+from {{ ref('int_job_skills') }} s
+join {{ ref('fct_job_postings') }} f
+  on f.job_id = s.job_id
+ and f.last_seen_date = s.snapshot_date

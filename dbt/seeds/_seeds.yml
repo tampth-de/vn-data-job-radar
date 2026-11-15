@@ -23,6 +23,22 @@ seeds:
       - name: role_family
         data_tests: [unique, not_null]
 
+  - name: skill_dictionary
+    description: >
+      Maps raw skill tags (lower-cased, trimmed) to a canonical skill and a category.
+      Unmapped tags are reported by the warning-level test assert_skills_are_categorized.
+    columns:
+      - name: alias
+        data_tests: [unique, not_null]
+      - name: skill
+        data_tests: [not_null]
+      - name: skill_category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['language', 'database', 'big_data', 'cloud', 'devops', 'bi_analytics',
+                         'ml_ai', 'web', 'role_tag', 'soft_skill', 'business', 'other']
+
   - name: fx_rates
     description: Approximate fixed exchange rates used to compare salaries in VND. Update manually.
     columns:

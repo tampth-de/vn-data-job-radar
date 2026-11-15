@@ -15,8 +15,29 @@ models:
       - name: salary_max_high_vnd
         description: Highest possible maximum salary (VND/month), derived from the masked value.
 
+  - name: dim_job_history
+    description: >
+      SCD type 2 history of each job posting: one row per version, a new version
+      whenever a tracked attribute (title, salary, levels, experience, work mode,
+      location, skills) changes. Derived from daily snapshots (gaps-and-islands).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [job_id, version_number]
+    columns:
+      - name: job_version_key
+        data_tests: [unique, not_null]
+      - name: valid_from
+        data_tests: [not_null]
+      - name: job_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_job_postings')
+                field: job_id
+
   - name: bridge_job_skills
-    description: One row per job and normalized skill.
+    description: One row per job and canonical skill (aliases merged via the skill_dictionary seed).
     data_tests:
       - unique_combination:
           arguments:
@@ -28,9 +49,11 @@ models:
               arguments:
                 to: ref('fct_job_postings')
                 field: job_id
+      - name: skill_category
+        data_tests: [not_null]
 
   - name: agg_skill_demand_daily
-    description: Number and share of postings requiring each skill, per day.
+    description: Number and share of Data/AI postings requiring each canonical skill, per day.
     data_tests:
       - unique_combination:
           arguments:

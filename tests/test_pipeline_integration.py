@@ -9,7 +9,8 @@ Needs a running, EMPTY warehouse, so it only runs when RUN_INTEGRATION=1, e.g. i
 Fixture story (tests/fixtures/raw/topdev):
     day 1: jobs 1001 (Data Engineer, also matched by "AI"), 1002 (Data Analyst),
            1003 (Telesales noise), 1004 (AI Engineer, USD salary)
-    day 2: only 1001 and 1002 are still listed
+    day 2: only 1001 and 1002 are still listed; 1001 raised its salary and changed
+           skills (Spark -> PySpark, + Postgres); 1002 only reordered its skills
 """
 
 import os
@@ -64,8 +65,9 @@ def test_role_classification(jobs):
 
 
 def test_masked_salary_ranges_in_vnd(jobs):
-    assert jobs[1001]["salary_min_low_vnd"] == 30_000_000
-    assert jobs[1001]["salary_max_high_vnd"] == 59_999_999
+    # latest version (day 2): "4******* - 6******* VND"
+    assert jobs[1001]["salary_min_low_vnd"] == 40_000_000
+    assert jobs[1001]["salary_max_high_vnd"] == 69_999_999
     # USD 2*** - 3*** converted with the fx_rates seed (26,000 VND/USD)
     assert jobs[1004]["salary_min_low_vnd"] == 2_000 * 26_000
     assert jobs[1004]["salary_max_high_vnd"] == 3_999 * 26_000
@@ -86,6 +88,30 @@ def test_experience_levels_and_work_mode(jobs):
 def test_skills_are_normalized():
     skills = {row[0] for row in query("select skill from marts.bridge_job_skills where job_id = 1002")}
     assert skills == {"sql", "power bi", "python"}  # " python " trimmed and lower-cased
+
+
+def test_skill_aliases_are_merged():
+    rows = dict(query("select skill, skill_category from marts.bridge_job_skills where job_id = 1001"))
+    assert rows["spark"] == "big_data"          # "PySpark" -> spark
+    assert rows["postgresql"] == "database"     # "Postgres" -> postgresql
+    assert "pyspark" not in rows
+
+
+def test_scd2_history():
+    versions = query(
+        "select job_id, version_number, valid_from::text, valid_to::text, is_current"
+        " from marts.dim_job_history order by job_id, version_number"
+    )
+    by_job = {}
+    for job_id, *rest in versions:
+        by_job.setdefault(job_id, []).append(tuple(rest))
+
+    # 1001 changed salary/skills on day 2 -> two versions
+    assert by_job[1001] == [(1, "2026-01-01", "2026-01-01", False), (2, "2026-01-02", None, True)]
+    # 1002 only reordered its skills -> still one version
+    assert by_job[1002] == [(1, "2026-01-01", None, True)]
+    # 1003 disappeared but never changed -> one current version (closure is tracked in fct)
+    assert by_job[1003] == [(1, "2026-01-01", None, True)]
 
 
 def test_skill_demand_excludes_non_data_jobs():

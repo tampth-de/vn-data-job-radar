@@ -12,3 +12,10 @@ models:
                 values: ['non_data', 'data_engineer', 'data_scientist', 'ai_engineer',
                          'data_analyst', 'database_admin', 'data_governance',
                          'data_annotation', 'other']
+
+  - name: int_job_skills
+    description: One row per day, job and canonical skill (aliases merged via skill_dictionary).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [snapshot_date, job_id, skill]

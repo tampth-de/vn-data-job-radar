@@ -45,9 +45,16 @@ Runtime: PostgreSQL 17 in Docker Compose · Transformations: dbt Core · Tests: 
 |---|---|---|
 | `stg_topdev__job_snapshots` | job × day | Dedups jobs found by several keywords; parses masked salaries into ranges, experience years, provinces, skills |
 | `int_job_snapshots_classified` | job × day | Assigns a role family from ordered regex rules in a seed (`role_rules.csv`); flags non-data noise such as "Telesales – data có sẵn" |
+| `int_job_skills` | job × day × skill | Skill aliases merged through a dictionary seed (`pyspark` → spark, `reactjs` → react) with a category (language, database, big_data, cloud, ml_ai, …) |
 | `fct_job_postings` | job | Latest attributes + lifecycle (`first_seen_date`, `last_seen_date`, `is_active`), seniority range, salary in VND |
-| `bridge_job_skills` | job × skill | Normalized skill names |
+| `dim_job_history` | job × version | **SCD type 2**: a new version whenever salary, title, levels, skills or location change, with `valid_from` / `valid_to` / `is_current` |
+| `bridge_job_skills` | job × skill | Canonical skills of each job's latest version |
 | `agg_skill_demand_daily` | day × skill | Share of Data/AI postings requiring each skill |
+
+**Why SCD2 without `dbt snapshot`?** Snapshots need a warehouse that keeps state between
+runs. Here bronze keeps every daily snapshot, so history is *derived* with a
+gaps-and-islands query: deterministic, and rebuildable from scratch (which CI and the
+daily run do). Skill order is ignored when comparing versions.
 
 Two data problems worth noting:
 
@@ -118,8 +125,8 @@ masked salary ranges, skill normalization).
 
 | Layer | Tests |
 |---|---|
-| Python | 10 unit tests (paging, retries, idempotency, HTML parsing), 7 end-to-end tests |
-| dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, ingestion health check |
+| Python | 10 unit tests (paging, retries, idempotency, HTML parsing), 9 end-to-end tests |
+| dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, SCD2 no-overlap test, ingestion health check, warning for uncategorized skills |
 
 ## Roadmap
 
@@ -130,8 +137,8 @@ masked salary ranges, skill normalization).
 - [x] PostgreSQL warehouse (Docker) + idempotent raw loader
 - [x] dbt staging / intermediate / marts with tests, masked-salary parsing, role classification
 - [x] Job lifecycle: first seen / last seen / active
-- [ ] Track attribute changes over time (SCD2 with dbt snapshots)
-- [ ] Skill synonym mapping (e.g. "postgres" = "postgresql")
+- [x] Track attribute changes over time (SCD2, derived from daily snapshots)
+- [x] Skill synonym mapping and categories (dictionary seed + warning test for unmapped skills)
 - [x] CI (end-to-end on fixtures) + daily data quality checks on real data
 - [ ] Airflow orchestration
 - [ ] Metabase dashboard

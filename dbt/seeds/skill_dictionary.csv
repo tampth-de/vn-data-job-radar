@@ -1,0 +1,95 @@
+alias,skill,skill_category
+python,python,language
+sql,sql,language
+scala,scala,language
+java,java,language
+golang,go,language
+go,go,language
+typescript,typescript,language
+ts,typescript,language
+javascript,javascript,language
+js,javascript,language
+r,r,language
+vba,vba,language
+c#,c#,language
+mysql,mysql,database
+postgresql,postgresql,database
+postgres,postgresql,database
+oracle,oracle,database
+sql server,sql server,database
+ms sql,sql server,database
+mssql,sql server,database
+mongodb,mongodb,database
+redis,redis,database
+spark,spark,big_data
+pyspark,spark,big_data
+apache spark,spark,big_data
+hadoop,hadoop,big_data
+kafka,kafka,big_data
+airflow,airflow,big_data
+apache airflow,airflow,big_data
+dbt,dbt,big_data
+databricks,databricks,big_data
+snowflake,snowflake,big_data
+big data,big data,big_data
+data warehouse,data warehouse,big_data
+etl,etl,big_data
+elt,elt,big_data
+aws,aws,cloud
+amazon web services,aws,cloud
+gcp,gcp,cloud
+google cloud,gcp,cloud
+azure,azure,cloud
+cloud,cloud,cloud
+ci/cd,ci/cd,devops
+docker,docker,devops
+kubernetes,kubernetes,devops
+k8s,kubernetes,devops
+power bi,power bi,bi_analytics
+powerbi,power bi,bi_analytics
+tableau,tableau,bi_analytics
+excel,excel,bi_analytics
+google analytics,google analytics,bi_analytics
+data analytics,data analysis,bi_analytics
+data analysis,data analysis,bi_analytics
+phân tích dữ liệu,data analysis,bi_analytics
+ai,ai,ml_ai
+machine learning,machine learning,ml_ai
+ml,machine learning,ml_ai
+deep learning,deep learning,ml_ai
+nlp,nlp,ml_ai
+llm,llm,ml_ai
+large language models,llm,ml_ai
+pytorch,pytorch,ml_ai
+tensorflow,tensorflow,ml_ai
+data science,data science,ml_ai
+computer vision,computer vision,ml_ai
+react,react,web
+reactjs,react,web
+react.js,react,web
+vue,vue,web
+vuejs,vue,web
+vue.js,vue,web
+nodejs,node.js,web
+node.js,node.js,web
+api,api,web
+rest api,api,web
+full-stack,full-stack,web
+data engineer,data engineering,role_tag
+communication,communication,soft_skill
+giao tiếp,communication,soft_skill
+english,english,soft_skill
+tiếng anh,english,soft_skill
+giảng dạy,teaching,soft_skill
+marketing,marketing,business
+brand marketing,marketing,business
+seo,seo,business
+content,content,business
+sales,sales,business
+sale,sales,business
+sales b2b,sales,business
+telesales,telesales,business
+erp,erp,business
+microsoft 365,microsoft 365,business
+logistics / warehouse / transportation,logistics,business
+phát triển phần mềm,software development,other
