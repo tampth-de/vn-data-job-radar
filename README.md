@@ -42,11 +42,19 @@ aggregated results are published.
 ## Project structure
 
 ```
-ingestion/      Python scrapers, one sub-package per source
-tests/          Unit tests (parsers, normalizers)
-docs/           Design notes, source survey, data model
-data/           Local data lake (git-ignored)
+ingestion/          Python scrapers, one sub-package per source
+tests/              Unit tests (parsers, normalizers)
+docs/               Design notes, source survey, data model
+data/               Local data lake (git-ignored)
+.github/workflows/  Scheduled daily ingestion
 ```
+
+## Scheduling
+
+A GitHub Actions workflow ([daily_ingest.yml](.github/workflows/daily_ingest.yml))
+runs every day at 08:00 Vietnam time: it runs the unit tests, fetches new data and
+commits the raw files to a separate **private** data repository, so scraped content
+is never published in this public repo.
 
 ## Getting started
 
@@ -59,7 +67,7 @@ pip install -r requirements.txt
 ## Roadmap
 
 - [x] Survey data sources
-- [ ] TopDev ingestion → raw JSON
+- [x] TopDev ingestion → raw JSON (multi-keyword, pagination, retries, idempotent daily partition)
 - [ ] Daily schedule (GitHub Actions)
 - [ ] ITviec ingestion
 - [ ] PostgreSQL + dbt staging/marts
