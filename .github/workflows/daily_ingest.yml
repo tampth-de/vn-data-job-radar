@@ -44,12 +44,21 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run unit tests
+        id: tests
         run: python -m pytest -q
 
+      # Each source runs even if another source failed (one broken site must not
+      # block the others), but nothing runs if the unit tests failed.
       - name: Ingest TopDev
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python -m ingestion.topdev.fetch_jobs
 
+      - name: Ingest ITviec
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: python -m ingestion.itviec.fetch_jobs
+
       - name: Commit raw data to data repo
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         working-directory: data
         run: |
           git config user.name "github-actions[bot]"

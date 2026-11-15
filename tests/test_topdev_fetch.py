@@ -1,15 +1,18 @@
 """Tests for the TopDev ingestion, using a fake HTTP server (no real network calls)."""
 
+from datetime import date
+
 import httpx
 import pytest
 
+from ingestion import common
 from ingestion.topdev import fetch_jobs
 
 
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
     """Skip real waiting so tests run instantly."""
-    monkeypatch.setattr(fetch_jobs.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(common.time, "sleep", lambda seconds: None)
 
 
 def make_client(handler) -> httpx.Client:
@@ -58,7 +61,6 @@ def test_fetch_page_does_not_retry_on_client_error():
 
 
 def test_run_is_idempotent(tmp_path, monkeypatch):
-    monkeypatch.setattr(fetch_jobs, "RAW_DIR", tmp_path)
     monkeypatch.setattr(fetch_jobs, "KEYWORDS", ["data", "AI"])
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -66,15 +68,13 @@ def test_run_is_idempotent(tmp_path, monkeypatch):
         return httpx.Response(200, json={"data": [{"id": 1}], "meta": {"last_page": 1}})
 
     real_client = httpx.Client
-    monkeypatch.setattr(
-        fetch_jobs.httpx, "Client",
-        lambda **kwargs: real_client(transport=httpx.MockTransport(handler)),
-    )
+    monkeypatch.setattr(common, "make_client",
+                        lambda: real_client(transport=httpx.MockTransport(handler)))
 
-    first = fetch_jobs.run()
-    second = fetch_jobs.run()
+    first = fetch_jobs.run(run_date=date(2026, 1, 2), raw_root=tmp_path)
+    second = fetch_jobs.run(run_date=date(2026, 1, 2), raw_root=tmp_path)
 
-    files = sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*.json"))
+    files = list((tmp_path / "topdev" / "dt=2026-01-02").rglob("*.json"))
     assert len(files) == 3  # 2 pages + manifest, not doubled by the second run
     assert first["total_rows"] == second["total_rows"] == 2
     assert second["unique_jobs"] == 1

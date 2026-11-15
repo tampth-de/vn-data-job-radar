@@ -30,6 +30,19 @@ Observed data quality issues to handle later:
 - Experience as free text (`"2 năm, 4 năm"`).
 - Keyword search on the API looks strict (only a handful of results for "data engineer"); need to test broader keywords or category filters.
 
+## ITviec details (2026-11-15)
+
+- Category pages: `https://itviec.com/it-jobs/<slug>`, 20 jobs per page, `?page=N`.
+  The `<h1>` holds the total (e.g. "25 data engineer jobs in Vietnam").
+- Categories used: data-engineer (25), data-analyst (17), data-science (13), ai (131),
+  machine-learning (41), big-data (2), business-intelligence (8) → 237 rows, 181 unique jobs.
+- Each job card has: slug, title, company, "Posted N days ago", work mode, location, skill tags.
+  Salary shows "Sign in to view salary" for anonymous visitors.
+- Observed issues for staging: multi-city locations in both orders
+  ("Ho Chi Minh - Ha Noi" / "Ha Noi - Ho Chi Minh"); relative posting dates;
+  the `ai` category includes general software jobs (Java, Microservices), so a
+  relevance filter is needed.
+
 ## Rules we follow
 
 - Read each site's Terms of Service before scheduling daily runs. (TODO)
