@@ -104,7 +104,8 @@ jobs:
         id: dbt
         if: ${{ !cancelled() && steps.load.outcome == 'success' }}
         working-directory: dbt
-        run: dbt build --profiles-dir . --vars '{min_daily_jobs: 10, max_data_age_days: 2}'
+        run: |
+          dbt build --profiles-dir . --vars '{min_daily_jobs: 10, max_data_age_days: 2}'
 
       - name: Publish daily summary
         if: ${{ !cancelled() && steps.dbt.outcome == 'success' }}
