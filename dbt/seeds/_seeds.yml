@@ -1,0 +1,30 @@
+version: 2
+
+seeds:
+  - name: topdev_level_map
+    description: >
+      Our own mapping of TopDev's Vietnamese seniority labels to English levels.
+      The API does not translate these labels (checked with locale=en_US), so this
+      mapping is an assumption documented here.
+    columns:
+      - name: level_vi
+        data_tests: [unique, not_null]
+      - name: level_rank
+        description: 1 = Intern ... 7 = Director, 0 = any level.
+
+  - name: role_rules
+    description: >
+      Ordered, case-insensitive regex rules on job titles to assign a role family.
+      The first matching rule (lowest rule_order) wins. `non_data` comes first to drop
+      sales/marketing jobs that only mention "data" (e.g. "Data có sẵn" = lead lists).
+    columns:
+      - name: rule_order
+        data_tests: [unique, not_null]
+      - name: role_family
+        data_tests: [unique, not_null]
+
+  - name: fx_rates
+    description: Approximate fixed exchange rates used to compare salaries in VND. Update manually.
+    columns:
+      - name: currency
+        data_tests: [unique, not_null]

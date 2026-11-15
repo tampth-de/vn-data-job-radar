@@ -14,6 +14,8 @@ data/
 dbt/target/
 dbt/dbt_packages/
 dbt/logs/
+dbt/.user.yml
+logs/
 
 # Logs / OS / editors
 *.log

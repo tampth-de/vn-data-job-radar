@@ -1,0 +1,22 @@
+# Local stack for the project. Start with:  docker compose up -d
+services:
+  warehouse:
+    image: postgres:17
+    container_name: radar-warehouse
+    environment:
+      POSTGRES_USER: ${WAREHOUSE_USER:-radar}
+      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:-radar}
+      POSTGRES_DB: ${WAREHOUSE_DB:-radar}
+    ports:
+      - "5433:5432"   # 5433 on the host: 5432 is taken by the native Windows Postgres
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WAREHOUSE_USER:-radar} -d ${WAREHOUSE_DB:-radar}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  warehouse-data:

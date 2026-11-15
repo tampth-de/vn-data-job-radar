@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_topdev__job_snapshots
+    description: >
+      TopDev jobs parsed into typed columns, one row per job per day seen.
+      Salaries are masked for anonymous visitors ("1*******"), so they are turned
+      into a range: salary_min_low (lowest possible minimum) and salary_max_high
+      (highest possible maximum).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [snapshot_date, job_id]
+    columns:
+      - name: snapshot_date
+        data_tests: [not_null]
+      - name: job_id
+        data_tests: [not_null]
+      - name: title
+        data_tests: [not_null]
+      - name: work_mode
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['onsite', 'remote', 'hybrid']
+      - name: salary_currency
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['VND', 'USD']
+      - name: experience_years_min
+        description: Minimum years required; 0 when "Không yêu cầu" (not required).

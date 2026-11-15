@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_job_postings
+    description: One row per job posting with lifecycle (first/last seen) and latest attributes.
+    columns:
+      - name: job_id
+        data_tests: [unique, not_null]
+      - name: first_seen_date
+        data_tests: [not_null]
+      - name: last_seen_date
+        data_tests: [not_null]
+      - name: salary_min_low_vnd
+        description: Lowest possible minimum salary (VND/month), derived from the masked value.
+      - name: salary_max_high_vnd
+        description: Highest possible maximum salary (VND/month), derived from the masked value.
+
+  - name: bridge_job_skills
+    description: One row per job and normalized skill.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [source, job_id, skill]
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_job_postings')
+                field: job_id
+
+  - name: agg_skill_demand_daily
+    description: Number and share of postings requiring each skill, per day.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [snapshot_date, skill]
+    columns:
+      - name: pct_of_jobs
+        data_tests: [not_null]

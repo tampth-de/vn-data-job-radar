@@ -28,11 +28,12 @@ API_URL = "https://api.topdev.vn/td/v2/jobs"
 KEYWORDS = ["data", "AI", "dữ liệu", "analytics", "big data", "BI"]
 
 PAGE_SIZE = 50
+# "company" must be listed here, otherwise the API omits the nested company object.
 JOB_FIELDS = (
-    "id,title,salary,skills_arr,addresses,job_levels_str,experiences_str,"
+    "id,title,company,salary,skills_arr,addresses,job_levels_str,experiences_str,"
     "job_types_str,published,refreshed,detail_url"
 )
-COMPANY_FIELDS = "display_name,industries_str"
+COMPANY_FIELDS = "display_name,slug,industries_str"
 
 log = logging.getLogger(__name__)
 

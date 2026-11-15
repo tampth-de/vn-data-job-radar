@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: int_job_snapshots_classified
+    description: Daily job snapshots with a role family assigned from the role_rules seed.
+    columns:
+      - name: role_family
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['non_data', 'data_engineer', 'data_scientist', 'ai_engineer',
+                         'data_analyst', 'database_admin', 'data_governance',
+                         'data_annotation', 'other']

@@ -1,0 +1,13 @@
+# Connection comes from environment variables (see .env.example), never hard-coded secrets.
+radar:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5433') | int }}"
+      user: "{{ env_var('WAREHOUSE_USER', 'radar') }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD', 'radar') }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'radar') }}"
+      schema: analytics
+      threads: 4

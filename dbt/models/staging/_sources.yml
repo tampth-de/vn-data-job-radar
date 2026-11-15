@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Untouched data loaded from the data lake by load/topdev.py.
+    schema: raw
+    tables:
+      - name: topdev_jobs
+        description: One row per job per search keyword per day, with the original API JSON in `payload`.
+        loaded_at_field: loaded_at
+        freshness:
+          warn_after: {count: 36, period: hour}
+          error_after: {count: 72, period: hour}
+      - name: ingestion_runs
+        description: One row per source per day with the scraper's run manifest.
