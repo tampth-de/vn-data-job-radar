@@ -68,7 +68,7 @@ pip install -r requirements.txt
 
 - [x] Survey data sources
 - [x] TopDev ingestion → raw JSON (multi-keyword, pagination, retries, idempotent daily partition)
-- [ ] Daily schedule (GitHub Actions)
+- [x] Daily schedule (GitHub Actions → private data repo)
 - [ ] ITviec ingestion
 - [ ] PostgreSQL + dbt staging/marts
 - [ ] Salary & skill normalization, cross-source dedup
