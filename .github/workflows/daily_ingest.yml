@@ -53,9 +53,9 @@ jobs:
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python -m ingestion.topdev.fetch_jobs
 
-      - name: Ingest ITviec
-        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
-        run: python -m ingestion.itviec.fetch_jobs
+      # ITviec is NOT scheduled: its Terms (2.2) forbid retrieving/downloading content
+      # beyond reasonable personal use without written consent, and it blocks cloud IPs.
+      # See docs/source_survey.md.
 
       - name: Commit raw data to data repo
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}

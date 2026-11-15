@@ -34,10 +34,13 @@ Orchestration: Airflow  ·  Runtime: Docker Compose  ·  CI: GitHub Actions
 
 ## Data sources
 
-See [docs/source_survey.md](docs/source_survey.md) for how each source was evaluated.
-Only public job listing pages are collected, at a low request rate, respecting
-`robots.txt`. No personal data (recruiter emails/phones) is stored, and only
-aggregated results are published.
+Currently scheduled: **TopDev** ([topdev.vn](https://topdev.vn)) via its public JSON API.
+
+See [docs/source_survey.md](docs/source_survey.md) for how each source was evaluated,
+including a review of each site's `robots.txt` and Terms of Service. Requests are
+made at a low rate with an honest User-Agent. Raw data is kept in a private
+repository, no personal data (recruiter emails/phones) is stored, nothing is used
+commercially, and only aggregated statistics are published, credited to the source.
 
 ## Project structure
 
@@ -69,7 +72,7 @@ pip install -r requirements.txt
 - [x] Survey data sources
 - [x] TopDev ingestion → raw JSON (multi-keyword, pagination, retries, idempotent daily partition)
 - [x] Daily schedule (GitHub Actions → private data repo)
-- [x] ITviec ingestion (HTML pages, BeautifulSoup parser, shared retry/partition helpers)
+- [x] ITviec parser (HTML, BeautifulSoup) — not scheduled: ITviec's terms require written consent ([details](docs/source_survey.md#terms-of-service-review-2026-11-15))
 - [ ] PostgreSQL + dbt staging/marts
 - [ ] Salary & skill normalization, cross-source dedup
 - [ ] Job lifecycle tracking (SCD2)

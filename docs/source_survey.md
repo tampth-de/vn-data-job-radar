@@ -43,8 +43,17 @@ Observed data quality issues to handle later:
   the `ai` category includes general software jobs (Java, Microservices), so a
   relevance filter is needed.
 
+## Terms of Service review (2026-11-15)
+
+Not legal advice, just how we read the terms and what we decided.
+
+| Source | What the terms say | Technical signal | Decision |
+|---|---|---|---|
+| TopDev (`/term-of-services`) | Content may not be modified, copied for distribution, published, turned into derivative works or exploited commercially. Digital copies for viewing and reasonable copies for internal use are allowed, keeping the source (topdev.vn + URL). | Open JSON API, no blocking. | **Scheduled daily.** Raw data stays in a private repo; only aggregated statistics are published, credited to topdev.vn; no commercial use. |
+| ITviec (`/blog/terms-and-conditions/`) | §2.2: other than reasonable personal use, content "may not be retrieved, displayed, modified, copied, printed, sold, downloaded … without our prior written consent". | Returns 403 to cloud (GitHub Actions) IPs. | **Not scheduled.** Parser kept for reference; would require written permission from ITviec. |
+
 ## Rules we follow
 
-- Read each site's Terms of Service before scheduling daily runs. (TODO)
+- Read each site's Terms of Service before scheduling daily runs.
 - 2–3 seconds between requests, descriptive User-Agent.
 - Never log in to scrape, never store personal contact data.
