@@ -1,10 +1,11 @@
 # Daily ingestion: run the scrapers and commit the raw files to a PRIVATE data repo.
 #
 # Required repository secret:
-#   DATA_REPO_TOKEN  fine-grained token with "Contents: Read and write"
-#                    on the private data repo only.
+#   DATA_REPO_SSH_KEY  private half of an SSH deploy key. The public half is added
+#                      to the data repo as a deploy key with write access, so this
+#                      key can only touch that one repository.
 # Required repository variable (Settings > Secrets and variables > Actions > Variables):
-#   DATA_REPO        e.g. tampth-de/vn-data-job-radar-data
+#   DATA_REPO          e.g. tampth-de/vn-data-job-radar-data
 
 name: Daily ingest
 
@@ -30,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ vars.DATA_REPO }}
-          token: ${{ secrets.DATA_REPO_TOKEN }}
+          ssh-key: ${{ secrets.DATA_REPO_SSH_KEY }}
           path: data
 
       - name: Set up Python
