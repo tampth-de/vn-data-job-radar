@@ -118,6 +118,13 @@ cd .. && python -m dashboard.setup_metabase   # -> http://localhost:3000
 python -m pytest                       # unit tests
 ```
 
+Day to day, a single command does all of the above (start containers → pull data →
+load → `dbt build` → dashboard → summary). On Windows you can also double-click `refresh.cmd`.
+
+```bash
+python refresh.py                      # add --rebuild-dashboard after editing dashboard/cards.py
+```
+
 ## Scheduling and data quality
 
 **Daily** ([daily_ingest.yml](.github/workflows/daily_ingest.yml), 08:00 Vietnam time):
