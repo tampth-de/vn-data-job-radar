@@ -18,5 +18,28 @@ services:
       retries: 10
     restart: unless-stopped
 
+  dashboard:
+    image: metabase/metabase:v0.65.4.3
+    container_name: radar-dashboard
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db   # Metabase's own settings (H2 file)
+      MB_ANON_TRACKING_ENABLED: "false"
+      MB_CHECK_FOR_UPDATES: "false"
+      JAVA_TIMEZONE: Asia/Ho_Chi_Minh
+    ports:
+      - "3000:3000"   # http://localhost:3000
+    volumes:
+      - dashboard-data:/metabase-data
+    depends_on:
+      warehouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
 volumes:
   warehouse-data:
+  dashboard-data:

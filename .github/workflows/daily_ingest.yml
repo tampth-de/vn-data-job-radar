@@ -11,7 +11,9 @@ name: Daily ingest
 
 on:
   schedule:
-    - cron: "0 1 * * *"   # 01:00 UTC = 08:00 Vietnam time
+    # 00:23 UTC = 07:23 Vietnam time. An odd minute on purpose: runs scheduled at the
+    # top of the hour queue behind everyone else's and were starting 7h late.
+    - cron: "23 0 * * *"
   workflow_dispatch:       # allow manual runs from the Actions tab
 
 concurrency:

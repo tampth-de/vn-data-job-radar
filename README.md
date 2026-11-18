@@ -32,12 +32,12 @@ raw.*           untouched JSON in jsonb
         ▼
 staging.*       typed columns, one row per job per day
 intermediate.*  business rules (role classification)
-marts.*         fct_job_postings, bridge_job_skills, agg_skill_demand_daily
+marts.*         fct_job_postings, dim_job_history, bridge_job_skills, agg_skill_demand_daily
         ▼
-Dashboard (planned: Metabase)
+Metabase dashboard (16 cards, defined in code)
 ```
 
-Runtime: PostgreSQL 17 in Docker Compose · Transformations: dbt Core · Tests: pytest + dbt tests
+Runtime: PostgreSQL 17 + Metabase in Docker Compose · Transformations: dbt Core · Tests: pytest + dbt tests
 
 ## Data model
 
@@ -65,6 +65,19 @@ Two data problems worth noting:
   Data/AI roles; the rest are sales/marketing posts mentioning "data". A rule-based
   classifier keeps marts clean.
 
+## Dashboard
+
+A Metabase dashboard is created **from code** ([dashboard/cards.py](dashboard/cards.py),
+[dashboard/setup_metabase.py](dashboard/setup_metabase.py)): every card's SQL, chart type
+and grid position is versioned, and re-running the script rebuilds it identically.
+
+| Section | Cards |
+|---|---|
+| Headline | active Data/AI jobs, new in the last 7 days, companies hiring, % of search results that are real Data/AI jobs |
+| Demand | top 15 skills, jobs by role family, daily trend by role, skill categories |
+| Money / place / level | salary ranges by role (from masked values), provinces, seniority, work mode, experience |
+| Detail & history | latest postings, postings that changed (SCD2), closed postings and days listed |
+
 ## Data sources
 
 Currently scheduled: **TopDev** ([topdev.vn](https://topdev.vn)) via its public JSON API.
@@ -81,11 +94,12 @@ commercially, and only aggregated statistics are published, credited to the sour
 ingestion/          Scrapers, one sub-package per source + shared helpers (common.py)
 load/               Loads raw files into the warehouse `raw` schema
 dbt/                dbt project: staging, intermediate, marts, seeds, macros, tests
+dashboard/          Metabase dashboard as code
 tests/              Unit tests (pytest, no network)
 docs/               Source survey and design notes
 data/               Local clone of the private data repo (git-ignored)
 .github/workflows/  Scheduled daily ingestion
-docker-compose.yml  Local PostgreSQL warehouse (port 5433)
+docker-compose.yml  Local PostgreSQL warehouse (port 5433) and Metabase (port 3000)
 ```
 
 ## Getting started
@@ -96,10 +110,11 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env                 # warehouse connection settings
 
-docker compose up -d                   # PostgreSQL on localhost:5433
+docker compose up -d                   # PostgreSQL on :5433, Metabase on :3000
 python -m ingestion.topdev.fetch_jobs  # or: git clone <data repo> data
 python -m load.topdev                  # raw files -> raw.topdev_jobs
 cd dbt && dbt build --profiles-dir .   # seeds, models and tests
+cd .. && python -m dashboard.setup_metabase   # -> http://localhost:3000
 python -m pytest                       # unit tests
 ```
 
@@ -140,5 +155,6 @@ masked salary ranges, skill normalization).
 - [x] Track attribute changes over time (SCD2, derived from daily snapshots)
 - [x] Skill synonym mapping and categories (dictionary seed + warning test for unmapped skills)
 - [x] CI (end-to-end on fixtures) + daily data quality checks on real data
+- [x] Metabase dashboard as code
+- [ ] Dashboard screenshots once 2+ weeks of history exist
 - [ ] Airflow orchestration
-- [ ] Metabase dashboard
