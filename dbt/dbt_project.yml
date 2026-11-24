@@ -10,6 +10,12 @@ test-paths: ["tests"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+# Postgres contrib extensions used for cross-source deduplication:
+# unaccent (strip Vietnamese accents) and pg_trgm (trigram similarity).
+on-run-start:
+  - "create extension if not exists unaccent with schema public"
+  - "create extension if not exists pg_trgm with schema public"
+
 models:
   radar:
     staging:

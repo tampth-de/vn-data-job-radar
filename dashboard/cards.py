@@ -17,8 +17,8 @@ def pie(dimension: str, metric: str) -> dict:
 # (name, description, sql, display, visualization_settings, (row, col, width, height))
 CARDS = [
     # --- headline numbers -------------------------------------------------------
-    ("Active Data/AI jobs", "Data/AI postings listed in the latest daily snapshot.",
-     "select count(*) as jobs from marts.fct_job_postings where is_active and is_data_ai_role",
+    ("Active Data/AI jobs", "Data/AI postings listed in the latest run of each source. An ad posted on several boards counts once.",
+     "select count(distinct posting_key) as jobs from marts.fct_job_postings where is_active and is_data_ai_role",
      "scalar", {}, (0, 0, 6, 3)),
 
     ("New Data/AI jobs (last 7 days)",
@@ -28,7 +28,7 @@ CARDS = [
          select min(first_seen_date) as first_day, max(last_seen_date) as last_day
          from marts.fct_job_postings
      )
-     select count(*) as jobs
+     select count(distinct posting_key) as jobs
      from marts.fct_job_postings, bounds
      where is_data_ai_role
        and first_seen_date > greatest(first_day, last_day - 7)
@@ -42,7 +42,7 @@ CARDS = [
 
     ("% of search results that are real Data/AI jobs",
      "Keyword search returns lots of noise (e.g. 'Telesales - data có sẵn'). Share kept by the classifier.",
-     "select round(100.0 * count(*) filter (where is_data_ai_role) / nullif(count(*), 0)) as pct"
+     "select round(100.0 * count(distinct posting_key) filter (where is_data_ai_role) / nullif(count(distinct posting_key), 0)) as pct"
      " from marts.fct_job_postings where is_active",
      "scalar", {"scalar.suffix": "%"}, (0, 18, 6, 3)),
 
@@ -59,7 +59,7 @@ CARDS = [
 
     ("Active jobs by role family", "Role family assigned from job titles (role_rules seed).",
      """
-     select role_family, count(*) as jobs
+     select role_family, count(distinct posting_key) as jobs
      from marts.fct_job_postings
      where is_active and is_data_ai_role
      group by 1 order by 2 desc
@@ -68,7 +68,7 @@ CARDS = [
 
     ("Daily Data/AI jobs by role family", "One point per scraping day; fills in as data accumulates.",
      """
-     select snapshot_date, role_family, count(distinct job_key) as jobs
+     select snapshot_date, role_family, count(distinct posting_key) as jobs
      from intermediate.int_job_snapshots_classified
      where is_data_ai_role
      group by 1, 2 order by 1, 2
@@ -77,7 +77,7 @@ CARDS = [
 
     ("Skill categories (latest day)", "Number of Data/AI jobs asking for at least one skill of each category.",
      f"""
-     select skill_category, count(distinct job_key) as jobs
+     select skill_category, count(distinct posting_key) as jobs
      from intermediate.int_job_skills
      where is_data_ai_role and snapshot_date = {LATEST_DAY}
      group by 1 order by 2 desc
@@ -91,7 +91,7 @@ CARDS = [
      """
      select
          role_family,
-         count(*) filter (where salary_max_high_vnd is not null) as jobs_with_salary,
+         count(distinct posting_key) filter (where salary_max_high_vnd is not null) as jobs_with_salary,
          round(avg(salary_min_low_vnd) / 1e6, 1)  as avg_min_low_m,
          round(avg(salary_max_high_vnd) / 1e6, 1) as avg_max_high_m
      from marts.fct_job_postings
@@ -102,7 +102,7 @@ CARDS = [
 
     ("Active Data/AI jobs by province", "A job listing several provinces counts in each.",
      """
-     select p as province, count(*) as jobs
+     select p as province, count(distinct posting_key) as jobs
      from marts.fct_job_postings f
      cross join lateral unnest(f.provinces) as p
      where is_active and is_data_ai_role
@@ -113,7 +113,7 @@ CARDS = [
     ("Seniority levels (TopDev only)",
      "Our English mapping of TopDev's Vietnamese levels (topdev_level_map seed). CareerLink has no level field.",
      """
-     select m.level_rank, m.level_en as level, count(*) as jobs
+     select m.level_rank, m.level_en as level, count(distinct posting_key) as jobs
      from marts.fct_job_postings f
      cross join lateral unnest(f.levels_vi) as lv(level_vi)
      join reference.topdev_level_map m on m.level_vi = lv.level_vi
@@ -124,7 +124,7 @@ CARDS = [
 
     ("Work mode", None,
      """
-     select work_mode, count(*) as jobs
+     select work_mode, count(distinct posting_key) as jobs
      from marts.fct_job_postings
      where is_active and is_data_ai_role
      group by 1 order by 2 desc
@@ -141,7 +141,7 @@ CARDS = [
              when experience_years_min <= 4 then '3. 3-4 years'
              else '4. 5+ years'
          end as experience,
-         count(*) as jobs
+         count(distinct posting_key) as jobs
      from marts.fct_job_postings
      where is_active and is_data_ai_role
      group by 1 order by 1
@@ -174,7 +174,7 @@ CARDS = [
      "Days between first and last time seen. Jobs already open before tracking started make this a lower bound.",
      """
      select role_family,
-            count(*) as closed_jobs,
+            count(distinct posting_key) as closed_jobs,
             round(avg(last_seen_date - first_seen_date + 1), 1) as avg_days_listed
      from marts.fct_job_postings
      where not is_active and is_data_ai_role
@@ -186,7 +186,7 @@ CARDS = [
     ("Active Data/AI jobs by source",
      "TopDev (public API) and CareerLink (schema.org JobPosting). The same job posted on both counts twice.",
      """
-     select source, role_family, count(*) as jobs
+     select source, role_family, count(distinct posting_key) as jobs
      from marts.fct_job_postings
      where is_active and is_data_ai_role
      group by 1, 2 order by 1, 3 desc

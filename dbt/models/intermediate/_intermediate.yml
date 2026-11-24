@@ -14,6 +14,18 @@ models:
               arguments:
                 values: ['topdev', 'careerlink']
 
+  - name: int_job_identity
+    description: >
+      Cross-source deduplication. One row per job_key with its posting_key: jobs from
+      different sources whose normalized company (accents and legal boilerplate removed,
+      anonymous employers excluded) and title match are mutual best matches and share
+      the smallest job_key as posting_key.
+    columns:
+      - name: job_key
+        data_tests: [unique, not_null]
+      - name: posting_key
+        data_tests: [not_null]
+
   - name: int_job_snapshots_classified
     description: Daily job snapshots with a role family assigned from the role_rules seed (title + source category).
     columns:

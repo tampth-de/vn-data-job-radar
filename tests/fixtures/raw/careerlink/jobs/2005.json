@@ -1,0 +1,18 @@
+{
+  "_comment": "Synthetic job page JSON-LD (made-up values) for the cross-source dedup tests.",
+  "job_id": 2005,
+  "url": "https://www.careerlink.vn/tim-viec-lam/x/2005",
+  "first_keywords": ["data analyst"],
+  "fetched_at": "2026-01-02T02:00:00+00:00",
+  "job_posting": {
+    "@context": "https://schema.org", "@type": "JobPosting",
+    "title": "Senior Data Engineer (Spark, Airflow)",
+    "description": "<p>Xây dựng pipeline với Spark và Airflow.</p>",
+    "datePosted": "2025-12-30",
+    "hiringOrganization": {"@type": "Organization", "name": "CareerLink's Client", "sameAs": "/viec-lam-cua/x/2005"},
+    "baseSalary": {"@type": "MonetaryAmount", "currency": "VND", "value": {"@type": "QuantitativeValue", "minValue": 40000000, "maxValue": 60000000, "unitText": "MONTH"}},
+    "experienceRequirements": {"@type": "OccupationalExperienceRequirements", "monthsOfExperience": 12},
+    "jobLocation": [{"@type": "Place", "address": {"@type": "PostalAddress", "addressRegion": "Hà Nội", "addressCountry": "VN"}}],
+    "occupationalCategory": {"@type": "CategoryCode", "name": "Phân tích dữ liệu"}
+  }
+}

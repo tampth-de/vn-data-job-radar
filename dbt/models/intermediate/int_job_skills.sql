@@ -16,7 +16,7 @@ dictionary as (
 
 tags as (
     select
-        s.snapshot_date, s.job_key, s.source, s.is_data_ai_role, s.role_family,
+        s.snapshot_date, s.job_key, s.posting_key, s.source, s.is_data_ai_role, s.role_family,
         lower(trim(t.skill_raw)) as alias
     from snapshots s
     cross join lateral unnest(s.skills) as t(skill_raw)
@@ -25,7 +25,7 @@ tags as (
 
 from_tags as (
     select
-        t.snapshot_date, t.job_key, t.source, t.is_data_ai_role, t.role_family,
+        t.snapshot_date, t.job_key, t.posting_key, t.source, t.is_data_ai_role, t.role_family,
         coalesce(d.skill, t.alias)                  as skill,
         coalesce(d.skill_category, 'uncategorized') as skill_category
     from tags t
@@ -34,7 +34,7 @@ from_tags as (
 
 from_text as (
     select
-        s.snapshot_date, s.job_key, s.source, s.is_data_ai_role, s.role_family,
+        s.snapshot_date, s.job_key, s.posting_key, s.source, s.is_data_ai_role, s.role_family,
         d.skill,
         d.skill_category
     from snapshots s

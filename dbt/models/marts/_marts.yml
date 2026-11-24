@@ -8,6 +8,11 @@ models:
     columns:
       - name: job_key
         data_tests: [unique, not_null]
+      - name: posting_key
+        description: Shared by the same ad found on several sources. Count postings with count(distinct posting_key).
+        data_tests: [not_null]
+      - name: duplicate_of
+        description: The canonical job_key when this row is the same ad as a job on another source.
       - name: first_seen_date
         data_tests: [not_null]
       - name: last_seen_date

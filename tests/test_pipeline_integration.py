@@ -14,7 +14,9 @@ Fixture story (tests/fixtures/raw):
            skills (Spark -> PySpark, + Postgres); 1002 only reordered its skills
   CareerLink
     day 1: 2001 (Data Analyst, exact salary, page fetched), 2002 (nurse, never fetched)
-    day 2: only 2001 is still listed
+    day 2: 2001 still listed; 2003 = the SAME ad as topdev:1002 written differently,
+           2004 = same title as 2003 but another company, 2005 = same title as
+           topdev:1001 but an anonymous employer ("CareerLink's Client")
 """
 
 import os
@@ -53,9 +55,35 @@ def jobs() -> dict[str, dict]:
 
 def test_one_row_per_job_across_sources(jobs):
     assert sorted(jobs) == [
-        "careerlink:2001", "careerlink:2002",
+        "careerlink:2001", "careerlink:2002", "careerlink:2003", "careerlink:2004", "careerlink:2005",
         "topdev:1001", "topdev:1002", "topdev:1003", "topdev:1004",
     ]
+
+
+def test_cross_source_duplicate_is_merged(jobs):
+    # "Data Analyst (Power BI)" @ "Beta Retail" (TopDev) =
+    # "Data Analyst - Power BI" @ "Công ty TNHH Beta Retail Việt Nam" (CareerLink)
+    assert jobs["topdev:1002"]["posting_key"] == jobs["careerlink:2003"]["posting_key"] == "careerlink:2003"
+    assert jobs["topdev:1002"]["duplicate_of"] == "careerlink:2003"
+    assert jobs["topdev:1002"]["same_posting_on"] == "careerlink:2003"
+    assert jobs["careerlink:2003"]["is_canonical"] and not jobs["topdev:1002"]["is_canonical"]
+
+
+def test_near_misses_are_not_merged(jobs):
+    # same title, different company that only shares "Công ty TNHH ... Việt Nam"
+    assert jobs["careerlink:2004"]["posting_key"] == "careerlink:2004"
+    # same title as topdev:1001, but the employer is anonymous
+    assert jobs["careerlink:2005"]["posting_key"] == "careerlink:2005"
+    assert jobs["topdev:1001"]["posting_key"] == "topdev:1001"
+
+
+def test_skill_demand_counts_postings_not_rows():
+    (jobs_that_day,) = query(
+        "select distinct jobs_that_day from marts.agg_skill_demand_daily where snapshot_date = '2026-01-02'"
+    )[0]
+    # Data/AI rows on day 2: topdev 1001, 1002 + careerlink 2001, 2003, 2004, 2005 = 6 rows,
+    # but topdev:1002 and careerlink:2003 are one posting -> 5
+    assert jobs_that_day == 5
 
 
 def test_lifecycle(jobs):

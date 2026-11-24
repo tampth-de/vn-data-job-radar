@@ -1,4 +1,6 @@
--- One row per job posting ever seen (all sources), with its lifecycle and latest attributes.
+-- One row per job ad per source ever seen, with its lifecycle and latest attributes.
+-- The same ad on two job boards gives two rows sharing one posting_key
+-- (see int_job_identity): count postings with count(distinct posting_key).
 --   first_seen_date / last_seen_date : from the daily snapshots
 --   is_active                        : seen in its source's most recent run (per source, so a
 --                                      failed run of one site does not "close" all its jobs)
@@ -47,6 +49,12 @@ select
     l.source,
     l.job_key,
     l.job_id,
+    -- cross-source dedup: count postings with count(distinct posting_key)
+    l.posting_key,
+    l.posting_key = l.job_key                      as is_canonical,
+    case when l.posting_key <> l.job_key then l.posting_key end as duplicate_of,
+    idn.matched_job_key                            as same_posting_on,
+    idn.match_title_similarity,
     l.title,
     l.role_family,
     l.is_data_ai_role,
@@ -84,5 +92,6 @@ select
 from latest l
 join lifecycle lc using (job_key)
 join latest_run_per_source lr using (source)
+join {{ ref('int_job_identity') }} idn using (job_key)
 left join levels lv using (job_key)
 left join {{ ref('fx_rates') }} fx on fx.currency = l.salary_currency

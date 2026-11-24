@@ -18,9 +18,11 @@ rules as (
 
 select
     s.*,
+    i.posting_key,   -- same value for the same ad found on several sources
     coalesce(r.role_family, 'other')                              as role_family,
     coalesce(r.role_family, 'other') not in ('non_data', 'other') as is_data_ai_role
 from snapshots s
+join {{ ref('int_job_identity') }} i using (job_key)
 left join lateral (
     select role_family
     from rules

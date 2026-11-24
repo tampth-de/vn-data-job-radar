@@ -20,13 +20,13 @@ def build_summary() -> str:
         with conn.cursor() as cur:
             (latest_date,) = fetch(cur, f"select {LATEST}")[0]
             totals = fetch(cur, """
-                select count(*) filter (where is_active),
-                       count(*) filter (where is_active and is_data_ai_role),
-                       count(*) filter (where is_data_ai_role)
+                select count(distinct posting_key) filter (where is_active),
+                       count(distinct posting_key) filter (where is_active and is_data_ai_role),
+                       count(distinct posting_key) filter (where is_data_ai_role)
                 from marts.fct_job_postings
             """)[0]
             roles = fetch(cur, """
-                select role_family, count(*) from marts.fct_job_postings
+                select role_family, count(distinct posting_key) from marts.fct_job_postings
                 where is_active and is_data_ai_role group by 1 order by 2 desc
             """)
             skills = fetch(cur, f"""

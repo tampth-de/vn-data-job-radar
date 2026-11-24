@@ -54,7 +54,7 @@ CARDS = [
     {
         "name": "Matching jobs",
         "description": "Active Data/AI postings matching the filters.",
-        "sql": f"select count(*) as jobs from marts.fct_job_postings f where {FILTERS}",
+        "sql": f"select count(distinct f.posting_key) as jobs from marts.fct_job_postings f where {FILTERS}",
         "display": "scalar", "viz": {},
         "layout": (0, 0, 6, 3),
         "tags": ALL_TAGS,
@@ -71,7 +71,7 @@ CARDS = [
         "name": "Most requested skills in matching jobs",
         "description": "Use it to see what to learn for the roles you filtered.",
         "sql": f"""
-            select b.skill, count(distinct f.job_key) as jobs
+            select b.skill, count(distinct f.posting_key) as jobs
             from marts.fct_job_postings f
             join marts.bridge_job_skills b on b.job_key = f.job_key
             where {FILTERS}
@@ -107,6 +107,7 @@ CARDS = [
                 (select string_agg(b.skill, ', ' order by b.skill)
                  from marts.bridge_job_skills b where b.job_key = f.job_key) as skills,
                 f.last_seen_date - f.first_seen_date + 1             as days_listed,
+                f.same_posting_on                                    as also_on,
                 f.job_url                                            as apply
             from marts.fct_job_postings f
             where {FILTERS}

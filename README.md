@@ -69,6 +69,14 @@ Two data problems worth noting:
   classifier keeps marts clean.
 - **Lifecycle per source.** A job is "active" if it was seen in *its source's* latest
   run, so one site failing for a day does not close all of its jobs.
+- **The same ad on two boards** ([int_job_identity](dbt/models/intermediate/int_job_identity.sql)).
+  Jobs from different sources share a `posting_key` when their normalized companies
+  match and their titles are ≥ 50% similar (pg_trgm), as mutual best matches. Raw
+  company names are useless for this: any two "Công ty TNHH … Việt Nam" are ~60%
+  similar, so accents (`unaccent`) and legal boilerplate are stripped first
+  ("CÔNG TY TRÁCH NHIỆM HỮU HẠN AVEPOINT VIỆT NAM" → "avepoint"), and anonymous
+  employers ("CareerLink's Client") never match. Every count uses
+  `count(distinct posting_key)`.
 
 ## Dashboard
 
@@ -172,8 +180,8 @@ masked salary ranges, skill normalization).
 
 | Layer | Tests |
 |---|---|
-| Python | 23 unit tests (paging, retries, idempotency, HTML/JSON-LD parsing, title pre-filter, request cap, circuit breaker), 11 end-to-end tests across both sources |
-| dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, SCD2 no-overlap test, ingestion health check, warning for uncategorized skills |
+| Python | 23 unit tests (paging, retries, idempotency, HTML/JSON-LD parsing, title pre-filter, request cap, circuit breaker), 14 end-to-end tests across both sources (incl. duplicate, near-miss and anonymous-employer cases) |
+| dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, SCD2 no-overlap test, one-job-per-source-per-posting test, ingestion health check, warning for uncategorized skills |
 
 ## Roadmap
 
@@ -189,6 +197,6 @@ masked salary ranges, skill normalization).
 - [x] CI (end-to-end on fixtures) + daily data quality checks on real data
 - [x] Metabase dashboard as code
 - [x] Second source: CareerLink (JSON-LD, exact salaries, skills from descriptions), after reviewing 9 boards
-- [ ] Cross-source deduplication (same job posted on several boards)
+- [x] Cross-source deduplication (normalized company + title similarity, one-to-one matching, `posting_key`)
 - [ ] Dashboard screenshots once 2+ weeks of history exist
 - [ ] Airflow orchestration
