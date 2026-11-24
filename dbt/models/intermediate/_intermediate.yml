@@ -1,21 +1,36 @@
 version: 2
 
 models:
+  - name: int_job_snapshots
+    description: All sources unioned into one shape, one row per (source, job, day). job_key = '<source>:<id>'.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [snapshot_date, job_key]
+    columns:
+      - name: source
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['topdev', 'careerlink']
+
   - name: int_job_snapshots_classified
-    description: Daily job snapshots with a role family assigned from the role_rules seed.
+    description: Daily job snapshots with a role family assigned from the role_rules seed (title + source category).
     columns:
       - name: role_family
         data_tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['non_data', 'data_engineer', 'data_scientist', 'ai_engineer',
+                values: ['non_data', 'data_engineer', 'data_scientist', 'data_ai_lead', 'ai_engineer',
                          'data_analyst', 'database_admin', 'data_governance',
                          'data_annotation', 'other']
 
   - name: int_job_skills
-    description: One row per day, job and canonical skill (aliases merged via skill_dictionary).
+    description: >
+      One row per day, job and canonical skill: source tags mapped through skill_dictionary,
+      plus whole-word mentions in descriptions (aliases with text_match = true).
     data_tests:
       - unique_combination:
           arguments:
-            columns: [snapshot_date, job_id, skill]
+            columns: [snapshot_date, job_key, skill]

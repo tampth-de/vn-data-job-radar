@@ -21,20 +21,20 @@ market changes week over week.
 ## Architecture
 
 ```
-TopDev public API
-        │  ingestion/  Python, daily at 08:00 (GitHub Actions), retries, idempotent
+TopDev public JSON API          CareerLink search pages + schema.org JobPosting JSON-LD
+        │  ingestion/  Python, daily (GitHub Actions), retries, polite rate, idempotent
         ▼
-Bronze  raw JSON, data/raw/<source>/dt=YYYY-MM-DD/   (private data repo)
+Bronze  raw JSON/HTML, data/raw/<source>/dt=YYYY-MM-DD/   (private data repo)
         │  load/       Python → PostgreSQL, one transaction per day partition
         ▼
-raw.*           untouched JSON in jsonb
+raw.*           untouched payloads (jsonb)
         │  dbt
         ▼
-staging.*       typed columns, one row per job per day
-intermediate.*  business rules (role classification)
+staging.*       one model per source, typed columns, one row per job per day
+intermediate.*  sources unioned (job_key = source:id), role classification, skills
 marts.*         fct_job_postings, dim_job_history, bridge_job_skills, agg_skill_demand_daily
         ▼
-Metabase dashboard (16 cards, defined in code)
+Metabase dashboards (defined in code)
 ```
 
 Runtime: PostgreSQL 17 + Metabase in Docker Compose · Transformations: dbt Core · Tests: pytest + dbt tests
@@ -43,9 +43,11 @@ Runtime: PostgreSQL 17 + Metabase in Docker Compose · Transformations: dbt Core
 
 | Model | Grain | Highlights |
 |---|---|---|
-| `stg_topdev__job_snapshots` | job × day | Dedups jobs found by several keywords; parses masked salaries into ranges, experience years, provinces, skills |
-| `int_job_snapshots_classified` | job × day | Assigns a role family from ordered regex rules in a seed (`role_rules.csv`); flags non-data noise such as "Telesales – data có sẵn" |
-| `int_job_skills` | job × day × skill | Skill aliases merged through a dictionary seed (`pyspark` → spark, `reactjs` → react) with a category (language, database, big_data, cloud, ml_ai, …) |
+| `stg_topdev__job_snapshots` | job × day | Dedups jobs found by several keywords; parses masked salaries into ranges, experience years, provinces, skill tags |
+| `stg_careerlink__job_snapshots` | job × day | Search-page presence joined with the job's JobPosting JSON-LD: exact salary, months of experience, location, CareerLink's own job category, description |
+| `int_job_snapshots` | job × day | Both sources in one shape; `job_key = '<source>:<id>'`; province spellings unified ("Thành phố Hà Nội" = "Hà Nội") |
+| `int_job_snapshots_classified` | job × day | Assigns a role family from ordered regex rules in a seed (`role_rules.csv`) on title + source category; flags non-data noise such as "Telesales – data có sẵn" |
+| `int_job_skills` | job × day × skill | Source tags **and** whole-word matches in descriptions, merged through a dictionary seed (`pyspark` → spark) with a category; ambiguous words are not matched in text ("ai" also means "who" in Vietnamese) |
 | `fct_job_postings` | job | Latest attributes + lifecycle (`first_seen_date`, `last_seen_date`, `is_active`), seniority range, salary in VND |
 | `dim_job_history` | job × version | **SCD type 2**: a new version whenever salary, title, levels, skills or location change, with `valid_from` / `valid_to` / `is_current` |
 | `bridge_job_skills` | job × skill | Canonical skills of each job's latest version |
@@ -58,12 +60,15 @@ daily run do). Skill order is ignored when comparing versions.
 
 Two data problems worth noting:
 
-- **Masked salaries.** Anonymous visitors see `"1*******"`. That still means *an 8-digit
-  number starting with 1*, i.e. 10–19.99M VND, so salaries become ranges
-  (`salary_min_low`, `salary_max_high`) via a dbt macro.
+- **Masked salaries.** TopDev shows anonymous visitors `"1*******"`. That still means
+  *an 8-digit number starting with 1*, i.e. 10–19.99M VND, so salaries become ranges
+  (`salary_min_low`, `salary_max_high`) via a dbt macro. CareerLink shows exact values;
+  `salary_is_masked` tells them apart.
 - **Noisy keyword search.** Only ~45% of jobs returned for "data"/"AI" are actual
   Data/AI roles; the rest are sales/marketing posts mentioning "data". A rule-based
   classifier keeps marts clean.
+- **Lifecycle per source.** A job is "active" if it was seen in *its source's* latest
+  run, so one site failing for a day does not close all of its jobs.
 
 ## Dashboard
 
@@ -81,9 +86,9 @@ and grid position is versioned, and re-running the script rebuilds it identicall
 A second dashboard, **Job finder (personal use)** ([dashboard/job_finder.py](dashboard/job_finder.py)),
 filters active Data/AI postings by title, role, city, skill (aliases understood:
 `pyspark` → spark), level, work mode, my years of experience, minimum salary and
-posting age, with an "Apply" link to topdev.vn. Every filter is an optional
-`[[ ... ]]` block in the native SQL. It stays local: TopDev's terms do not allow
-republishing listings.
+posting age and source, with an "Apply" link to the source site. Every filter is an
+optional `[[ ... ]]` block in the native SQL. It stays local: the job boards' terms do
+not allow republishing listings.
 
 Metabase stores its own settings in a separate `metabase` database in the same
 PostgreSQL container (created by [docker/warehouse-init](docker/warehouse-init)),
@@ -91,7 +96,16 @@ not in its default H2 file.
 
 ## Data sources
 
-Currently scheduled: **TopDev** ([topdev.vn](https://topdev.vn)) via its public JSON API.
+Currently scheduled:
+
+- **TopDev** ([topdev.vn](https://topdev.vn)) via its public JSON API
+- **CareerLink** ([careerlink.vn](https://www.careerlink.vn)) via search pages and the
+  schema.org `JobPosting` JSON-LD embedded in job pages; each job page is fetched once,
+  5 s apart, with a per-run cap and a circuit breaker that stops when the site throttles
+
+Nine Vietnamese job boards were reviewed; seven were rejected because their terms forbid
+automated collection or reuse, or because they block automated clients (which we do not
+try to evade).
 
 See [docs/source_survey.md](docs/source_survey.md) for how each source was evaluated,
 including a review of each site's `robots.txt` and Terms of Service. Requests are
@@ -158,7 +172,7 @@ masked salary ranges, skill normalization).
 
 | Layer | Tests |
 |---|---|
-| Python | 10 unit tests (paging, retries, idempotency, HTML parsing), 9 end-to-end tests |
+| Python | 23 unit tests (paging, retries, idempotency, HTML/JSON-LD parsing, title pre-filter, request cap, circuit breaker), 11 end-to-end tests across both sources |
 | dbt | not-null / unique / accepted values / relationships, custom `unique_combination`, masked-salary macro test, SCD2 no-overlap test, ingestion health check, warning for uncategorized skills |
 
 ## Roadmap
@@ -174,5 +188,7 @@ masked salary ranges, skill normalization).
 - [x] Skill synonym mapping and categories (dictionary seed + warning test for unmapped skills)
 - [x] CI (end-to-end on fixtures) + daily data quality checks on real data
 - [x] Metabase dashboard as code
+- [x] Second source: CareerLink (JSON-LD, exact salaries, skills from descriptions), after reviewing 9 boards
+- [ ] Cross-source deduplication (same job posted on several boards)
 - [ ] Dashboard screenshots once 2+ weeks of history exist
 - [ ] Airflow orchestration

@@ -51,7 +51,7 @@ def build_summary() -> str:
         "|---|---|---|",
         *[f"| {skill} | {n} | {pct}% |" for skill, n, pct in skills],
         "",
-        "_Source: topdev.vn public job listings, aggregated._",
+        "_Sources: topdev.vn and careerlink.vn public job listings, aggregated._",
     ]
     return "\n".join(lines)
 

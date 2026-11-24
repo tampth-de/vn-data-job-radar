@@ -1,97 +1,112 @@
-alias,skill,skill_category
-python,python,language
-sql,sql,language
-scala,scala,language
-java,java,language
-golang,go,language
-go,go,language
-typescript,typescript,language
-ts,typescript,language
-javascript,javascript,language
-js,javascript,language
-r,r,language
-vba,vba,language
-c#,c#,language
-mysql,mysql,database
-postgresql,postgresql,database
-postgres,postgresql,database
-oracle,oracle,database
-sql server,sql server,database
-ms sql,sql server,database
-mssql,sql server,database
-mongodb,mongodb,database
-redis,redis,database
-spark,spark,big_data
-pyspark,spark,big_data
-apache spark,spark,big_data
-hadoop,hadoop,big_data
-kafka,kafka,big_data
-airflow,airflow,big_data
-apache airflow,airflow,big_data
-dbt,dbt,big_data
-databricks,databricks,big_data
-snowflake,snowflake,big_data
-big data,big data,big_data
-data warehouse,data warehouse,big_data
-etl,etl,big_data
-elt,elt,big_data
-aws,aws,cloud
-amazon web services,aws,cloud
-gcp,gcp,cloud
-google cloud,gcp,cloud
-azure,azure,cloud
-cloud,cloud,cloud
-ci/cd,ci/cd,devops
-docker,docker,devops
-kubernetes,kubernetes,devops
-k8s,kubernetes,devops
-power bi,power bi,bi_analytics
-powerbi,power bi,bi_analytics
-tableau,tableau,bi_analytics
-excel,excel,bi_analytics
-google analytics,google analytics,bi_analytics
-data analytics,data analysis,bi_analytics
-data analysis,data analysis,bi_analytics
-phân tích dữ liệu,data analysis,bi_analytics
-ai,ai,ml_ai
-machine learning,machine learning,ml_ai
-ml,machine learning,ml_ai
-deep learning,deep learning,ml_ai
-nlp,nlp,ml_ai
-llm,llm,ml_ai
-large language models,llm,ml_ai
-pytorch,pytorch,ml_ai
-tensorflow,tensorflow,ml_ai
-data science,data science,ml_ai
-computer vision,computer vision,ml_ai
-react,react,web
-reactjs,react,web
-react.js,react,web
-vue,vue,web
-vuejs,vue,web
-vue.js,vue,web
-nodejs,node.js,web
-node.js,node.js,web
-api,api,web
-rest api,api,web
-full-stack,full-stack,web
-data engineer,data engineering,role_tag
-communication,communication,soft_skill
-giao tiếp,communication,soft_skill
-english,english,soft_skill
-tiếng anh,english,soft_skill
-giảng dạy,teaching,soft_skill
-marketing,marketing,business
-brand marketing,marketing,business
-seo,seo,business
-content,content,business
-sales,sales,business
-sale,sales,business
-sales b2b,sales,business
-telesales,telesales,business
-erp,erp,business
-microsoft 365,microsoft 365,business
-logistics / warehouse / transportation,logistics,business
-phát triển phần mềm,software development,other
-database,database,database
-nosql,nosql,database
+alias,skill,skill_category,text_match
+python,python,language,true
+sql,sql,language,true
+scala,scala,language,true
+java,java,language,true
+golang,go,language,true
+go,go,language,false
+typescript,typescript,language,true
+ts,typescript,language,false
+javascript,javascript,language,true
+js,javascript,language,false
+r,r,language,false
+vba,vba,language,true
+c#,c#,language,true
+mysql,mysql,database,true
+postgresql,postgresql,database,true
+postgres,postgresql,database,true
+oracle,oracle,database,true
+sql server,sql server,database,true
+ms sql,sql server,database,true
+mssql,sql server,database,true
+mongodb,mongodb,database,true
+redis,redis,database,true
+nosql,nosql,database,true
+database,database,database,false
+spark,spark,big_data,true
+pyspark,spark,big_data,true
+apache spark,spark,big_data,true
+hadoop,hadoop,big_data,true
+kafka,kafka,big_data,true
+airflow,airflow,big_data,true
+apache airflow,airflow,big_data,true
+dbt,dbt,big_data,true
+databricks,databricks,big_data,true
+snowflake,snowflake,big_data,true
+ssis,ssis,big_data,true
+big data,big data,big_data,true
+data warehouse,data warehouse,big_data,true
+etl,etl,big_data,true
+elt,elt,big_data,true
+aws,aws,cloud,true
+amazon web services,aws,cloud,true
+gcp,gcp,cloud,true
+google cloud,gcp,cloud,true
+azure,azure,cloud,true
+cloud,cloud,cloud,false
+ci/cd,ci/cd,devops,true
+docker,docker,devops,true
+kubernetes,kubernetes,devops,true
+k8s,kubernetes,devops,true
+git,git,devops,true
+linux,linux,devops,true
+power bi,power bi,bi_analytics,true
+powerbi,power bi,bi_analytics,true
+dax,dax,bi_analytics,true
+power query,power query,bi_analytics,true
+tableau,tableau,bi_analytics,true
+looker,looker,bi_analytics,true
+looker studio,looker,bi_analytics,true
+excel,excel,bi_analytics,true
+google analytics,google analytics,bi_analytics,true
+data analytics,data analysis,bi_analytics,true
+data analysis,data analysis,bi_analytics,true
+phân tích dữ liệu,data analysis,bi_analytics,true
+statistics,statistics,bi_analytics,true
+thống kê,statistics,bi_analytics,true
+ai,ai,ml_ai,false
+trí tuệ nhân tạo,ai,ml_ai,true
+artificial intelligence,ai,ml_ai,true
+generative ai,generative ai,ml_ai,true
+genai,generative ai,ml_ai,true
+machine learning,machine learning,ml_ai,true
+ml,machine learning,ml_ai,false
+deep learning,deep learning,ml_ai,true
+nlp,nlp,ml_ai,true
+llm,llm,ml_ai,true
+large language models,llm,ml_ai,true
+pytorch,pytorch,ml_ai,true
+tensorflow,tensorflow,ml_ai,true
+scikit-learn,scikit-learn,ml_ai,true
+pandas,pandas,ml_ai,true
+data science,data science,ml_ai,true
+computer vision,computer vision,ml_ai,true
+react,react,web,true
+reactjs,react,web,true
+react.js,react,web,true
+vue,vue,web,false
+vuejs,vue,web,true
+vue.js,vue,web,true
+nodejs,node.js,web,true
+node.js,node.js,web,true
+api,api,web,false
+rest api,api,web,true
+full-stack,full-stack,web,true
+data engineer,data engineering,role_tag,false
+communication,communication,soft_skill,false
+giao tiếp,communication,soft_skill,false
+english,english,soft_skill,true
+tiếng anh,english,soft_skill,true
+giảng dạy,teaching,soft_skill,false
+marketing,marketing,business,false
+brand marketing,marketing,business,false
+seo,seo,business,false
+content,content,business,false
+sales,sales,business,false
+sale,sales,business,false
+sales b2b,sales,business,false
+telesales,telesales,business,false
+erp,erp,business,false
+microsoft 365,microsoft 365,business,false
+logistics / warehouse / transportation,logistics,business,false
+phát triển phần mềm,software development,other,false

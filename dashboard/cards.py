@@ -68,7 +68,7 @@ CARDS = [
 
     ("Daily Data/AI jobs by role family", "One point per scraping day; fills in as data accumulates.",
      """
-     select snapshot_date, role_family, count(distinct job_id) as jobs
+     select snapshot_date, role_family, count(distinct job_key) as jobs
      from intermediate.int_job_snapshots_classified
      where is_data_ai_role
      group by 1, 2 order by 1, 2
@@ -77,7 +77,7 @@ CARDS = [
 
     ("Skill categories (latest day)", "Number of Data/AI jobs asking for at least one skill of each category.",
      f"""
-     select skill_category, count(distinct job_id) as jobs
+     select skill_category, count(distinct job_key) as jobs
      from intermediate.int_job_skills
      where is_data_ai_role and snapshot_date = {LATEST_DAY}
      group by 1 order by 2 desc
@@ -86,8 +86,8 @@ CARDS = [
 
     # --- money, place, seniority --------------------------------------------------
     ("Salary range by role (million VND / month)",
-     "TopDev masks salaries ('1*******' = 10-19.99M), so these are bounds: average lowest possible "
-     "minimum and average highest possible maximum. Negotiable salaries are excluded.",
+     "CareerLink shows exact salaries; TopDev masks them ('1*******' = 10-19.99M), so for TopDev these "
+     "are bounds (lowest possible minimum, highest possible maximum). Negotiable salaries are excluded.",
      """
      select
          role_family,
@@ -102,7 +102,7 @@ CARDS = [
 
     ("Active Data/AI jobs by province", "A job listing several provinces counts in each.",
      """
-     select regexp_replace(p, '^(Thành phố|Tỉnh)\\s+', '') as province, count(*) as jobs
+     select p as province, count(*) as jobs
      from marts.fct_job_postings f
      cross join lateral unnest(f.provinces) as p
      where is_active and is_data_ai_role
@@ -110,7 +110,8 @@ CARDS = [
      """,
      "bar", chart(["province"], ["jobs"]), (17, 12, 12, 6)),
 
-    ("Seniority levels", "Our English mapping of TopDev's Vietnamese levels (topdev_level_map seed).",
+    ("Seniority levels (TopDev only)",
+     "Our English mapping of TopDev's Vietnamese levels (topdev_level_map seed). CareerLink has no level field.",
      """
      select m.level_rank, m.level_en as level, count(*) as jobs
      from marts.fct_job_postings f
@@ -150,11 +151,11 @@ CARDS = [
     # --- details & history -------------------------------------------------------
     ("Latest Data/AI postings", None,
      """
-     select first_seen_date, title, company_name, role_family, salary_text,
-            regexp_replace(primary_province, '^(Thành phố|Tỉnh)\\s+', '') as province, job_url
+     select first_seen_date, source, title, company_name, role_family, salary_text,
+            primary_province as province, job_url
      from marts.fct_job_postings
      where is_active and is_data_ai_role
-     order by first_seen_date desc, job_id desc
+     order by first_seen_date desc, job_key desc
      limit 50
      """,
      "table", {}, (29, 0, 24, 8)),
@@ -162,10 +163,10 @@ CARDS = [
     ("Postings that changed (SCD2 history)",
      "Every version of postings whose salary, title, levels, skills or location changed.",
      """
-     select h.job_id, h.version_number, h.valid_from, h.valid_to, h.title, h.salary_text, h.levels_vi
+     select h.source, h.job_id, h.version_number, h.valid_from, h.valid_to, h.title, h.salary_text, h.levels_vi
      from marts.dim_job_history h
-     where h.job_id in (select job_id from marts.dim_job_history where version_number > 1)
-     order by h.job_id, h.version_number
+     where h.job_key in (select job_key from marts.dim_job_history where version_number > 1)
+     order by h.job_key, h.version_number
      """,
      "table", {}, (37, 0, 12, 6)),
 
@@ -180,4 +181,24 @@ CARDS = [
      group by 1 order by 2 desc
      """,
      "table", {}, (37, 12, 12, 6)),
+
+    # --- sources -------------------------------------------------------------------
+    ("Active Data/AI jobs by source",
+     "TopDev (public API) and CareerLink (schema.org JobPosting). The same job posted on both counts twice.",
+     """
+     select source, role_family, count(*) as jobs
+     from marts.fct_job_postings
+     where is_active and is_data_ai_role
+     group by 1, 2 order by 1, 3 desc
+     """,
+     "bar", chart(["source", "role_family"], ["jobs"], **{"stackable.stack_type": "stacked"}), (43, 0, 12, 6)),
+
+    ("Daily active Data/AI jobs by source", "CareerLink tracking started on 2026-11-24.",
+     """
+     select snapshot_date, source, count(distinct job_key) as jobs
+     from intermediate.int_job_snapshots_classified
+     where is_data_ai_role
+     group by 1, 2 order by 1, 2
+     """,
+     "line", chart(["snapshot_date", "source"], ["jobs"]), (43, 12, 12, 6)),
 ]

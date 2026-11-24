@@ -30,3 +30,31 @@ models:
                 values: ['VND', 'USD']
       - name: experience_years_min
         description: Minimum years required; 0 when "Không yêu cầu" (not required).
+
+  - name: stg_careerlink__job_snapshots
+    description: >
+      CareerLink jobs, one row per job per day listed on a search page, enriched with
+      the job's schema.org JobPosting (exact salary, months of experience, location,
+      CareerLink's own job category, description). has_details is false until the
+      job page has been fetched.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [snapshot_date, job_id]
+    columns:
+      - name: snapshot_date
+        data_tests: [not_null]
+      - name: job_id
+        data_tests: [not_null]
+      - name: title
+        data_tests: [not_null]
+      - name: work_mode
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['onsite', 'remote', 'hybrid']
+      - name: salary_currency
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['VND', 'USD']

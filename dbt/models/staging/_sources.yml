@@ -2,14 +2,21 @@ version: 2
 
 sources:
   - name: raw
-    description: Untouched data loaded from the data lake by load/topdev.py.
+    description: Untouched data loaded from the data lake by load/ (python -m load.all).
     schema: raw
     tables:
       - name: topdev_jobs
-        description: One row per job per search keyword per day, with the original API JSON in `payload`.
+        description: TopDev. One row per job per search keyword per day, with the original API JSON in `payload`.
         loaded_at_field: loaded_at
         freshness:
           warn_after: {count: 36, period: hour}
           error_after: {count: 72, period: hour}
+      - name: careerlink_listings
+        description: CareerLink. One row per day, keyword and job seen on a search result page.
+      - name: careerlink_postings
+        description: CareerLink. One row per job with its schema.org JobPosting JSON-LD (fetched once).
+        columns:
+          - name: job_id
+            data_tests: [unique, not_null]
       - name: ingestion_runs
         description: One row per source per day with the scraper's run manifest.

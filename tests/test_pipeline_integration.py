@@ -1,16 +1,20 @@
-"""End-to-end test: synthetic raw files -> loader -> dbt -> marts.
+"""End-to-end test: synthetic raw files -> loaders -> dbt -> marts.
 
 Needs a running, EMPTY warehouse, so it only runs when RUN_INTEGRATION=1, e.g. in CI:
 
-    python -m load.topdev --raw-root tests/fixtures/raw
+    python -m load.all --raw-root tests/fixtures/raw
     (cd dbt && dbt build --profiles-dir .)
     RUN_INTEGRATION=1 python -m pytest tests/test_pipeline_integration.py
 
-Fixture story (tests/fixtures/raw/topdev):
+Fixture story (tests/fixtures/raw):
+  TopDev
     day 1: jobs 1001 (Data Engineer, also matched by "AI"), 1002 (Data Analyst),
            1003 (Telesales noise), 1004 (AI Engineer, USD salary)
     day 2: only 1001 and 1002 are still listed; 1001 raised its salary and changed
            skills (Spark -> PySpark, + Postgres); 1002 only reordered its skills
+  CareerLink
+    day 1: 2001 (Data Analyst, exact salary, page fetched), 2002 (nurse, never fetched)
+    day 2: only 2001 is still listed
 """
 
 import os
@@ -24,18 +28,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(scope="module")
-def jobs() -> dict[int, dict]:
-    conn = connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("select * from marts.fct_job_postings")
-            columns = [c.name for c in cur.description]
-            return {row[1]: dict(zip(columns, row)) for row in cur.fetchall()}
-    finally:
-        conn.close()
-
-
 def query(sql: str) -> list[tuple]:
     conn = connect()
     try:
@@ -46,72 +38,109 @@ def query(sql: str) -> list[tuple]:
         conn.close()
 
 
-def test_one_row_per_job_despite_duplicate_keywords(jobs):
-    assert sorted(jobs) == [1001, 1002, 1003, 1004]
+@pytest.fixture(scope="module")
+def jobs() -> dict[str, dict]:
+    conn = connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("select * from marts.fct_job_postings")
+            columns = [c.name for c in cur.description]
+            rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    return {row["job_key"]: row for row in rows}
+
+
+def test_one_row_per_job_across_sources(jobs):
+    assert sorted(jobs) == [
+        "careerlink:2001", "careerlink:2002",
+        "topdev:1001", "topdev:1002", "topdev:1003", "topdev:1004",
+    ]
 
 
 def test_lifecycle(jobs):
-    assert jobs[1001]["days_seen"] == 2 and jobs[1001]["is_active"]
-    assert jobs[1003]["days_seen"] == 1 and not jobs[1003]["is_active"]  # closed on day 2
-    assert str(jobs[1004]["last_seen_date"]) == "2026-01-01"
+    assert jobs["topdev:1001"]["days_seen"] == 2 and jobs["topdev:1001"]["is_active"]
+    assert jobs["topdev:1003"]["days_seen"] == 1 and not jobs["topdev:1003"]["is_active"]  # closed on day 2
+    assert str(jobs["topdev:1004"]["last_seen_date"]) == "2026-01-01"
+    assert jobs["careerlink:2001"]["is_active"] and not jobs["careerlink:2002"]["is_active"]
 
 
 def test_role_classification(jobs):
-    assert jobs[1001]["role_family"] == "data_engineer"
-    assert jobs[1002]["role_family"] == "data_analyst"
-    assert jobs[1003]["role_family"] == "non_data"
-    assert jobs[1003]["is_data_ai_role"] is False
-    assert jobs[1004]["role_family"] == "ai_engineer"
+    assert jobs["topdev:1001"]["role_family"] == "data_engineer"
+    assert jobs["topdev:1002"]["role_family"] == "data_analyst"
+    assert jobs["topdev:1003"]["role_family"] == "non_data"
+    assert jobs["topdev:1003"]["is_data_ai_role"] is False
+    assert jobs["topdev:1004"]["role_family"] == "ai_engineer"
+    assert jobs["careerlink:2001"]["role_family"] == "data_analyst"
+    assert jobs["careerlink:2002"]["is_data_ai_role"] is False
 
 
 def test_masked_salary_ranges_in_vnd(jobs):
-    # latest version (day 2): "4******* - 6******* VND"
-    assert jobs[1001]["salary_min_low_vnd"] == 40_000_000
-    assert jobs[1001]["salary_max_high_vnd"] == 69_999_999
+    # TopDev latest version (day 2): "4******* - 6******* VND"
+    assert jobs["topdev:1001"]["salary_min_low_vnd"] == 40_000_000
+    assert jobs["topdev:1001"]["salary_max_high_vnd"] == 69_999_999
+    assert jobs["topdev:1001"]["salary_is_masked"] is True
     # USD 2*** - 3*** converted with the fx_rates seed (26,000 VND/USD)
-    assert jobs[1004]["salary_min_low_vnd"] == 2_000 * 26_000
-    assert jobs[1004]["salary_max_high_vnd"] == 3_999 * 26_000
+    assert jobs["topdev:1004"]["salary_min_low_vnd"] == 2_000 * 26_000
+    assert jobs["topdev:1004"]["salary_max_high_vnd"] == 3_999 * 26_000
     # negotiable: no range, but TopDev's own estimate is kept
-    assert jobs[1002]["salary_is_negotiable"] is True
-    assert jobs[1002]["salary_min_low_vnd"] is None
-    assert jobs[1002]["salary_estimate_min_vnd"] == 15_000_000
+    assert jobs["topdev:1002"]["salary_is_negotiable"] is True
+    assert jobs["topdev:1002"]["salary_min_low_vnd"] is None
+    assert jobs["topdev:1002"]["salary_estimate_min_vnd"] == 15_000_000
 
 
-def test_experience_levels_and_work_mode(jobs):
-    assert (jobs[1001]["experience_years_min"], jobs[1001]["experience_years_max"]) == (3, 5)
-    assert (jobs[1002]["experience_years_min"], jobs[1002]["experience_years_max"]) == (0, 0)
-    assert (jobs[1002]["level_rank_min"], jobs[1002]["level_rank_max"]) == (2, 3)
-    assert jobs[1002]["work_mode"] == "remote"
-    assert jobs[1001]["primary_province"] == "Thành phố Hồ Chí Minh"
+def test_exact_salary_from_careerlink(jobs):
+    job = jobs["careerlink:2001"]
+    assert (job["salary_min_low_vnd"], job["salary_max_high_vnd"]) == (20_000_000, 25_000_000)
+    assert job["salary_is_masked"] is False and job["salary_is_negotiable"] is False
+
+
+def test_experience_levels_location_and_work_mode(jobs):
+    assert (jobs["topdev:1001"]["experience_years_min"], jobs["topdev:1001"]["experience_years_max"]) == (3, 5)
+    assert (jobs["topdev:1002"]["experience_years_min"], jobs["topdev:1002"]["experience_years_max"]) == (0, 0)
+    assert (jobs["topdev:1002"]["level_rank_min"], jobs["topdev:1002"]["level_rank_max"]) == (2, 3)
+    assert jobs["topdev:1002"]["work_mode"] == "remote"
+    # one spelling for provinces across sources: "Thành phố Hồ Chí Minh" -> "Hồ Chí Minh"
+    assert jobs["topdev:1001"]["primary_province"] == "Hồ Chí Minh"
+    assert jobs["careerlink:2001"]["primary_province"] == "Hà Nội"
+    assert jobs["careerlink:2001"]["experience_years_min"] == 2          # 24 months
 
 
 def test_skills_are_normalized():
-    skills = {row[0] for row in query("select skill from marts.bridge_job_skills where job_id = 1002")}
+    skills = {row[0] for row in query("select skill from marts.bridge_job_skills where job_key = 'topdev:1002'")}
     assert skills == {"sql", "power bi", "python"}  # " python " trimmed and lower-cased
 
 
 def test_skill_aliases_are_merged():
-    rows = dict(query("select skill, skill_category from marts.bridge_job_skills where job_id = 1001"))
+    rows = dict(query("select skill, skill_category from marts.bridge_job_skills where job_key = 'topdev:1001'"))
     assert rows["spark"] == "big_data"          # "PySpark" -> spark
     assert rows["postgresql"] == "database"     # "Postgres" -> postgresql
     assert "pyspark" not in rows
 
 
+def test_skills_extracted_from_description():
+    skills = {row[0] for row in query("select skill from marts.bridge_job_skills where job_key = 'careerlink:2001'")}
+    # "ai cũng có thể" means "anyone can": it must not become the skill "ai"
+    assert skills == {"sql", "power bi", "python", "english"}
+
+
 def test_scd2_history():
     versions = query(
-        "select job_id, version_number, valid_from::text, valid_to::text, is_current"
-        " from marts.dim_job_history order by job_id, version_number"
+        "select job_key, version_number, valid_from::text, valid_to::text, is_current"
+        " from marts.dim_job_history order by job_key, version_number"
     )
     by_job = {}
-    for job_id, *rest in versions:
-        by_job.setdefault(job_id, []).append(tuple(rest))
+    for job_key, *rest in versions:
+        by_job.setdefault(job_key, []).append(tuple(rest))
 
     # 1001 changed salary/skills on day 2 -> two versions
-    assert by_job[1001] == [(1, "2026-01-01", "2026-01-01", False), (2, "2026-01-02", None, True)]
+    assert by_job["topdev:1001"] == [(1, "2026-01-01", "2026-01-01", False), (2, "2026-01-02", None, True)]
     # 1002 only reordered its skills -> still one version
-    assert by_job[1002] == [(1, "2026-01-01", None, True)]
+    assert by_job["topdev:1002"] == [(1, "2026-01-01", None, True)]
     # 1003 disappeared but never changed -> one current version (closure is tracked in fct)
-    assert by_job[1003] == [(1, "2026-01-01", None, True)]
+    assert by_job["topdev:1003"] == [(1, "2026-01-01", None, True)]
+    # CareerLink job never fetched -> no history rows (avoids fake "details arrived" versions)
+    assert "careerlink:2002" not in by_job
 
 
 def test_skill_demand_excludes_non_data_jobs():
@@ -120,4 +149,4 @@ def test_skill_demand_excludes_non_data_jobs():
         " where snapshot_date = '2026-01-01'"
     ))
     assert "telesales" not in rows   # only came from the non-data job 1003
-    assert rows["python"] == 3       # 1001, 1002, 1004
+    assert rows["python"] == 4       # topdev 1001, 1002, 1004 + careerlink 2001

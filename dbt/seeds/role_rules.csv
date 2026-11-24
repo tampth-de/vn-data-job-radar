@@ -1,9 +1,10 @@
 rule_order,role_family,pattern
-10,non_data,telesales|data (có sẵn|sẵn có)|tư vấn tuyển sinh|marketing|chăm sóc khách hàng|giảng viên|kinh doanh
-20,data_engineer,data engineer|kỹ sư dữ liệu|big data|lakehouse|\metl\M|data platform|data pipeline
+10,non_data,telesales|data (có sẵn|sẵn có)|tư vấn tuyển sinh|marketing|chăm sóc khách hàng|giảng viên|nhân viên kinh doanh|dược sĩ
+20,data_engineer,data engineer|kỹ sư dữ liệu|big data|lakehouse|\metl\M|data platform|data pipeline|data architect|solution architect \(data
 30,data_scientist,data scien|khoa học dữ liệu|quantitative|machine learning|\mml\M engineer|mô hình
-40,ai_engineer,\mai\M.*(engineer|researcher|developer|builder)|\mllm\M|agentic|computer vision|\mnlp\M|generative
-50,data_analyst,data analy|phân tích dữ liệu|analytics|business intelligence|\mbi\M
+35,data_ai_lead,trưởng phòng dữ liệu|head of data|\mai\M product manager|\mai pm\M|quản lý dự án trí tuệ nhân tạo
+40,ai_engineer,\mai\M.*(engineer|researcher|developer|builder)|ai developer|trí tuệ nhân tạo|\mllm\M|agentic|computer vision|\mnlp\M|generative
+50,data_analyst,data analy|phân tích (dữ|số|dự) liệu|analytics|business intelligence|\mbi\M|insight
 60,database_admin,\mdba\M|cơ sở dữ liệu|database
 70,data_governance,quản trị dữ liệu|data governance|data quality
 80,data_annotation,gán nhãn|annotation|labeling|xử lý dữ liệu

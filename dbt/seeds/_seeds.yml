@@ -14,9 +14,10 @@ seeds:
 
   - name: role_rules
     description: >
-      Ordered, case-insensitive regex rules on job titles to assign a role family.
-      The first matching rule (lowest rule_order) wins. `non_data` comes first to drop
-      sales/marketing jobs that only mention "data" (e.g. "Data có sẵn" = lead lists).
+      Ordered, case-insensitive regex rules on "title | source category" to assign a
+      role family. The first matching rule (lowest rule_order) wins. `non_data` comes
+      first to drop sales/marketing jobs that only mention "data" (e.g. "Data có sẵn" =
+      lead lists).
     columns:
       - name: rule_order
         data_tests: [unique, not_null]
@@ -27,6 +28,12 @@ seeds:
     description: >
       Maps raw skill tags (lower-cased, trimmed) to a canonical skill and a category.
       Unmapped tags are reported by the warning-level test assert_skills_are_categorized.
+      text_match = true means the alias is also searched as a whole word in job
+      descriptions; it is false for ambiguous words ("ai" is Vietnamese for "who",
+      "go", "r", "sales", ...).
+    config:
+      column_types:
+        text_match: boolean
     columns:
       - name: alias
         data_tests: [unique, not_null]

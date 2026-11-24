@@ -86,9 +86,10 @@ def step_pull_data() -> None:
 
 
 def step_load() -> None:
-    from load.topdev import load
-    result = load()
-    log.info("loaded %d day partitions, %d rows", len(result), sum(result.values()))
+    from load.all import load_all
+    result = load_all()
+    log.info("loaded topdev %d days, careerlink %d days / %d job pages",
+             len(result["topdev"]), len(result["careerlink"]["days"]), result["careerlink"]["postings"])
 
 
 def step_dbt() -> None:

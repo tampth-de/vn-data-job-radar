@@ -2,18 +2,22 @@ version: 2
 
 models:
   - name: fct_job_postings
-    description: One row per job posting with lifecycle (first/last seen) and latest attributes.
+    description: >
+      One row per job posting (all sources) with lifecycle (first/last seen, active in
+      its source's latest run) and latest attributes.
     columns:
-      - name: job_id
+      - name: job_key
         data_tests: [unique, not_null]
       - name: first_seen_date
         data_tests: [not_null]
       - name: last_seen_date
         data_tests: [not_null]
       - name: salary_min_low_vnd
-        description: Lowest possible minimum salary (VND/month), derived from the masked value.
+        description: >
+          Minimum salary (VND/month). Exact for CareerLink; for TopDev's masked values
+          ("1*******") the lowest possible minimum (salary_is_masked = true).
       - name: salary_max_high_vnd
-        description: Highest possible maximum salary (VND/month), derived from the masked value.
+        description: Maximum salary (VND/month). Exact for CareerLink; highest possible maximum for TopDev.
 
   - name: dim_job_history
     description: >
@@ -23,37 +27,37 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [job_id, version_number]
+            columns: [job_key, version_number]
     columns:
       - name: job_version_key
         data_tests: [unique, not_null]
       - name: valid_from
         data_tests: [not_null]
-      - name: job_id
+      - name: job_key
         data_tests:
           - relationships:
               arguments:
                 to: ref('fct_job_postings')
-                field: job_id
+                field: job_key
 
   - name: bridge_job_skills
     description: One row per job and canonical skill (aliases merged via the skill_dictionary seed).
     data_tests:
       - unique_combination:
           arguments:
-            columns: [source, job_id, skill]
+            columns: [job_key, skill]
     columns:
-      - name: job_id
+      - name: job_key
         data_tests:
           - relationships:
               arguments:
                 to: ref('fct_job_postings')
-                field: job_id
+                field: job_key
       - name: skill_category
         data_tests: [not_null]
 
   - name: agg_skill_demand_daily
-    description: Number and share of Data/AI postings requiring each canonical skill, per day.
+    description: Number and share of Data/AI postings (all sources) requiring each canonical skill, per day.
     data_tests:
       - unique_combination:
           arguments:

@@ -76,6 +76,12 @@ jobs:
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python -m ingestion.topdev.fetch_jobs
 
+      # ~10 search pages + new job pages only (5 s apart, capped, stops if throttled)
+      - name: Ingest CareerLink
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        timeout-minutes: 15
+        run: python -m ingestion.careerlink.fetch_jobs
+
       # ITviec is NOT scheduled: its Terms (2.2) forbid retrieving/downloading content
       # beyond reasonable personal use without written consent, and it blocks cloud IPs.
       # See docs/source_survey.md.
@@ -100,7 +106,7 @@ jobs:
       - name: Load full history into the warehouse
         id: load
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
-        run: python -m load.topdev
+        run: python -m load.all
 
       - name: dbt build + data quality checks
         id: dbt

@@ -54,7 +54,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Load fixture data into the warehouse
-        run: python -m load.topdev --raw-root tests/fixtures/raw
+        run: python -m load.all --raw-root tests/fixtures/raw
 
       - name: dbt build (seeds, models, data tests)
         working-directory: dbt
