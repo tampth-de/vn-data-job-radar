@@ -81,6 +81,15 @@ def step_pull_data() -> None:
         log.warning("data/ is not a git clone of the data repo: skipping pull "
                     "(clone it with: git clone https://github.com/<you>/vn-data-job-radar-data.git data)")
         return
+    # data/ mirrors the data repo (only GitHub Actions writes to it). If something local
+    # changed it (e.g. a manual scrape), set those changes aside instead of failing;
+    # nothing is lost: `git -C data stash list` / `git -C data stash pop` bring them back.
+    dirty = run(["git", "-C", str(DATA_DIR), "status", "--porcelain"], quiet=True).stdout.strip()
+    if dirty:
+        log.warning("data/ had %d local change(s); stashing them before pulling "
+                    "(see: git -C data stash list)", len(dirty.splitlines()))
+        run(["git", "-C", str(DATA_DIR), "stash", "push", "--include-untracked",
+             "-m", f"refresh auto-stash {time.strftime('%Y-%m-%d %H:%M')}"], quiet=True)
     out = run(["git", "-C", str(DATA_DIR), "pull", "--ff-only"], quiet=True).stdout.strip()
     log.info("data repo: %s", out.splitlines()[-1] if out else "up to date")
 

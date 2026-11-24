@@ -9,6 +9,7 @@ __pycache__/
 
 # Local data lake (never commit scraped data to the public repo)
 data/
+data_local/
 
 # dbt
 dbt/target/

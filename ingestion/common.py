@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import shutil
 import time
 from datetime import date
@@ -10,7 +11,10 @@ from pathlib import Path
 import httpx
 
 HEADERS = {"User-Agent": "vn-data-job-radar/0.1 (portfolio project)"}
-RAW_ROOT = Path("data/raw")
+# data/ is a clone of the private data repo, written only by the daily GitHub Actions
+# run. Local experiments set RADAR_RAW_ROOT (e.g. data_local/raw) so they never
+# modify that clone.
+RAW_ROOT = Path(os.getenv("RADAR_RAW_ROOT", "data/raw"))
 SLEEP_BETWEEN_REQUESTS = 2.0  # seconds, be polite to the server
 MAX_RETRIES = 3
 
