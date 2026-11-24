@@ -1,0 +1,18 @@
+{
+    // Use the project's virtual environment.
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+
+    // Let the "Run Python File" button (and new terminals) import project packages
+    // such as `ingestion` from any file, and print Vietnamese text correctly.
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONIOENCODING": "utf-8"
+    },
+    "terminal.integrated.env.osx": { "PYTHONPATH": "${workspaceFolder}" },
+    "terminal.integrated.env.linux": { "PYTHONPATH": "${workspaceFolder}" },
+    "python.analysis.extraPaths": ["${workspaceFolder}"],
+
+    // Tests
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"]
+}
