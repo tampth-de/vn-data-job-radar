@@ -107,33 +107,89 @@ def archive_previous(client: httpx.Client, collection_id: int) -> None:
         log.info("Archived %d previous items", len(items))
 
 
-def create_dashboard(client: httpx.Client, db_id: int, collection_id: int) -> int:
+MARKET_DASHBOARD = {
+    "name": DASHBOARD_NAME,
+    "description": "Daily snapshot of the Data/AI job market in Vietnam. Source: topdev.vn public listings.",
+    "cards": [
+        {"name": n, "description": d, "sql": s, "display": disp, "viz": v, "layout": lay, "tags": {}}
+        for n, d, s, disp, v, lay in CARDS
+    ],
+    "parameters": [],
+}
+
+
+def _template_tags(tags: dict[str, str]) -> dict:
+    """SQL variables of a native question: {{name}} -> text or number input."""
+    return {
+        name: {"id": f"tag-{name}", "name": name, "display-name": name.replace("_", " ").title(), "type": kind}
+        for name, kind in tags.items()
+    }
+
+
+def _dashboard_parameter(p: dict) -> dict:
+    param = {
+        "id": p["slug"], "name": p["name"], "slug": p["slug"],
+        "type": "number/=" if p["kind"] == "number" else "string/=",
+        "sectionId": "number" if p["kind"] == "number" else "string",
+    }
+    if p.get("values"):
+        param.update({
+            "values_query_type": "list",
+            "values_source_type": "static-list",
+            "values_source_config": {"values": p["values"]},
+        })
+    return param
+
+
+def create_dashboard(client: httpx.Client, db_id: int, collection_id: int, spec: dict) -> int:
     dashcards = []
-    for i, (name, description, sql, display, viz, (row, col, width, height)) in enumerate(CARDS, start=1):
+    for i, card in enumerate(spec["cards"], start=1):
         resp = client.post("/api/card", json={
-            "name": name,
-            "description": description,
+            "name": card["name"],
+            "description": card["description"],
             "collection_id": collection_id,
-            "display": display,
-            "visualization_settings": viz,
-            "dataset_query": {"type": "native", "database": db_id, "native": {"query": sql.strip()}},
+            "display": card["display"],
+            "visualization_settings": card["viz"],
+            "dataset_query": {
+                "type": "native",
+                "database": db_id,
+                "native": {"query": card["sql"].strip(), "template-tags": _template_tags(card["tags"])},
+            },
         })
         resp.raise_for_status()
+        card_id = resp.json()["id"]
+        row, col, width, height = card["layout"]
         dashcards.append({
-            "id": -i, "card_id": resp.json()["id"],
+            "id": -i, "card_id": card_id,
             "row": row, "col": col, "size_x": width, "size_y": height,
-            "parameter_mappings": [], "visualization_settings": {},
+            "visualization_settings": {},
+            "parameter_mappings": [
+                {"parameter_id": tag, "card_id": card_id, "target": ["variable", ["template-tag", tag]]}
+                for tag in card["tags"]
+            ],
         })
 
     resp = client.post("/api/dashboard", json={
-        "name": DASHBOARD_NAME,
-        "collection_id": collection_id,
-        "description": "Daily snapshot of the Data/AI job market in Vietnam. Source: topdev.vn public listings.",
+        "name": spec["name"], "collection_id": collection_id, "description": spec["description"],
     })
     resp.raise_for_status()
     dashboard_id = resp.json()["id"]
-    client.put(f"/api/dashboard/{dashboard_id}", json={"dashcards": dashcards}).raise_for_status()
+    client.put(f"/api/dashboard/{dashboard_id}", json={
+        "parameters": [_dashboard_parameter(p) for p in spec["parameters"]],
+        "dashcards": dashcards,
+    }).raise_for_status()
     return dashboard_id
+
+
+def create_all(client: httpx.Client) -> dict[str, int]:
+    """Archive the previous dashboards and create every dashboard. Returns name -> id."""
+    from dashboard.job_finder import DASHBOARD as JOB_FINDER
+
+    db_id = ensure_database(client)
+    collection_id = ensure_collection(client)
+    archive_previous(client, collection_id)
+    return {spec["name"]: create_dashboard(client, db_id, collection_id, spec)
+            for spec in (MARKET_DASHBOARD, JOB_FINDER)}
 
 
 def main() -> None:
@@ -141,11 +197,9 @@ def main() -> None:
     with httpx.Client(base_url=MB_URL, timeout=60) as client:
         wait_until_healthy(client)
         authenticate(client)
-        db_id = ensure_database(client)
-        collection_id = ensure_collection(client)
-        archive_previous(client, collection_id)
-        dashboard_id = create_dashboard(client, db_id, collection_id)
-    log.info("Dashboard ready: %s/dashboard/%d (%d cards)", MB_URL, dashboard_id, len(CARDS))
+        created = create_all(client)
+    for name, dashboard_id in created.items():
+        log.info("Dashboard ready: %s -> %s/dashboard/%d", name, MB_URL, dashboard_id)
 
 
 if __name__ == "__main__":

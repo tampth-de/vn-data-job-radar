@@ -95,23 +95,23 @@ def step_dbt() -> None:
     run([*dbt_command(), "build", "--profiles-dir", "."], cwd=DBT_DIR)
 
 
-def step_dashboard(rebuild: bool) -> str:
+def step_dashboard(rebuild: bool) -> dict[str, str]:
+    """Ensure every dashboard exists (re-create all if one is missing). Returns name -> URL."""
     import httpx
 
     from dashboard import setup_metabase as mb
+    from dashboard.job_finder import DASHBOARD as JOB_FINDER
 
+    wanted = {mb.MARKET_DASHBOARD["name"], JOB_FINDER["name"]}
     with httpx.Client(base_url=mb.MB_URL, timeout=60) as client:
         mb.wait_until_healthy(client)
         mb.authenticate(client)
-        db_id = mb.ensure_database(client)
         collection_id = mb.ensure_collection(client)
         items = mb.as_list(client.get(f"/api/collection/{collection_id}/items").json())
-        existing = [i for i in items if i["model"] == "dashboard"]
-        if existing and not rebuild:
-            return f"{mb.MB_URL}/dashboard/{existing[0]['id']}"
-        mb.archive_previous(client, collection_id)
-        dashboard_id = mb.create_dashboard(client, db_id, collection_id)
-        return f"{mb.MB_URL}/dashboard/{dashboard_id}"
+        existing = {i["name"]: i["id"] for i in items if i["model"] == "dashboard"}
+        if rebuild or not wanted <= existing.keys():
+            existing = mb.create_all(client)
+        return {name: f"{mb.MB_URL}/dashboard/{existing[name]}" for name in sorted(wanted)}
 
 
 def main() -> int:
@@ -137,14 +137,15 @@ def main() -> int:
             log.info("[%d/%d] %s", i, len(steps) + 1, name)
             func()
         log.info("[%d/%d] Dashboard", len(steps) + 1, len(steps) + 1)
-        url = step_dashboard(args.rebuild_dashboard)
+        urls = step_dashboard(args.rebuild_dashboard)
     except StepFailed as exc:
         log.error("Refresh stopped: %s", exc)
         return 1
 
     from load.summary import build_summary
     print("\n" + build_summary() + "\n")
-    print(f"Dashboard: {url}")
+    for name, url in urls.items():
+        print(f"Dashboard: {url}   ({name})")
     return 0
 
 

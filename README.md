@@ -78,6 +78,17 @@ and grid position is versioned, and re-running the script rebuilds it identicall
 | Money / place / level | salary ranges by role (from masked values), provinces, seniority, work mode, experience |
 | Detail & history | latest postings, postings that changed (SCD2), closed postings and days listed |
 
+A second dashboard, **Job finder (personal use)** ([dashboard/job_finder.py](dashboard/job_finder.py)),
+filters active Data/AI postings by title, role, city, skill (aliases understood:
+`pyspark` → spark), level, work mode, my years of experience, minimum salary and
+posting age, with an "Apply" link to topdev.vn. Every filter is an optional
+`[[ ... ]]` block in the native SQL. It stays local: TopDev's terms do not allow
+republishing listings.
+
+Metabase stores its own settings in a separate `metabase` database in the same
+PostgreSQL container (created by [docker/warehouse-init](docker/warehouse-init)),
+not in its default H2 file.
+
 ## Data sources
 
 Currently scheduled: **TopDev** ([topdev.vn](https://topdev.vn)) via its public JSON API.
