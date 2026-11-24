@@ -69,34 +69,37 @@ def fetch_keyword(client: httpx.Client, keyword: str) -> list[dict]:
 def run(run_date: date | None = None, raw_root: Path | None = None) -> dict:
     """Fetch all keywords and write one dated partition. Returns the run manifest."""
     run_date = run_date or date.today()
-    out_dir = common.reset_partition(SOURCE, run_date, raw_root)
     started_at = datetime.now(timezone.utc)
     per_keyword = {}
     unique_ids = set()
 
-    with common.make_client() as client:
+    with common.Partition(SOURCE, run_date, raw_root) as part, common.make_client() as client:
         for i, keyword in enumerate(KEYWORDS):
             if i > 0:
                 common.polite_pause()
             pages = fetch_keyword(client, keyword)
             n_jobs = 0
             for page_no, data in enumerate(pages, start=1):
-                common.write_json(out_dir / f"keyword={keyword}" / f"page_{page_no:03d}.json", data)
+                common.write_json(part.path / f"keyword={keyword}" / f"page_{page_no:03d}.json", data)
                 jobs = data.get("data", [])
                 n_jobs += len(jobs)
                 unique_ids.update(job["id"] for job in jobs)
             per_keyword[keyword] = {"pages": len(pages), "jobs": n_jobs}
 
-    manifest = {
-        "source": SOURCE,
-        "run_date": run_date.isoformat(),
-        "started_at": started_at.isoformat(),
-        "finished_at": datetime.now(timezone.utc).isoformat(),
-        "keywords": per_keyword,
-        "total_rows": sum(k["jobs"] for k in per_keyword.values()),
-        "unique_jobs": len(unique_ids),
-    }
-    common.write_json(out_dir / "_manifest.json", manifest)
+        if not unique_ids:
+            raise common.SourceUnavailable("TopDev returned no jobs for any keyword; keeping the previous partition")
+
+        manifest = {
+            "source": SOURCE,
+            "run_date": run_date.isoformat(),
+            "started_at": started_at.isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "keywords": per_keyword,
+            "total_rows": sum(k["jobs"] for k in per_keyword.values()),
+            "unique_jobs": len(unique_ids),
+        }
+        common.write_json(part.path / "_manifest.json", manifest)
+        part.commit()
     return manifest
 
 

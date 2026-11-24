@@ -120,26 +120,32 @@ def fetch_new_details(client: httpx.Client, todo: dict[int, tuple[str, list[str]
 
 def run(run_date: date | None = None, raw_root: Path | None = None) -> dict:
     run_date = run_date or date.today()
-    out_dir = common.reset_partition(SOURCE, run_date, raw_root)
-    jobs_dir = out_dir.parent / "jobs"
     started_at = datetime.now(timezone.utc)
     per_keyword: dict[str, dict] = {}
     listed: dict[int, tuple[str, list[str]]] = {}   # job_id -> (path, keywords)
     titles: dict[int, str] = {}
 
-    with common.make_client() as client:
+    with common.Partition(SOURCE, run_date, raw_root) as part, common.make_client() as client:
+        jobs_dir = part.final.parent / "jobs"
         for i, keyword in enumerate(KEYWORDS):
             if i > 0:
                 common.polite_pause()
             pages = search_keyword(client, keyword)
             found = set()
             for page_no, (html, jobs) in enumerate(pages, start=1):
-                common.write_text(out_dir / f"keyword={keyword}" / f"page_{page_no:03d}.html", html)
+                common.write_text(part.path / f"keyword={keyword}" / f"page_{page_no:03d}.html", html)
                 found.update(jobs)
                 for job_id, (path, title) in jobs.items():
                     listed.setdefault(job_id, (path, []))[1].append(keyword)
                     titles.setdefault(job_id, title)
             per_keyword[keyword] = {"pages": len(pages), "jobs": len(found)}
+
+        if not listed:
+            # every search page came back as an empty shell: we are being throttled
+            # (or the layout changed). Stop before touching anything.
+            raise common.SourceUnavailable(
+                "CareerLink search pages contained no jobs (throttled or layout changed); "
+                "keeping the previous partition and fetching no job pages")
 
         known = known_job_ids(jobs_dir)
         relevant = {job_id for job_id in listed if looks_relevant(titles.get(job_id, ""))}
@@ -150,18 +156,19 @@ def run(run_date: date | None = None, raw_root: Path | None = None) -> dict:
                  len(relevant) - len(todo), len(details["saved"]), len(details["missing"]),
                  details["remaining"])
 
-    manifest = {
-        "source": SOURCE,
-        "run_date": run_date.isoformat(),
-        "started_at": started_at.isoformat(),
-        "finished_at": datetime.now(timezone.utc).isoformat(),
-        "keywords": per_keyword,
-        "total_rows": sum(k["jobs"] for k in per_keyword.values()),
-        "unique_jobs": len(listed),
-        "relevant_jobs": len(relevant),
-        "details": details,
-    }
-    common.write_json(out_dir / "_manifest.json", manifest)
+        manifest = {
+            "source": SOURCE,
+            "run_date": run_date.isoformat(),
+            "started_at": started_at.isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "keywords": per_keyword,
+            "total_rows": sum(k["jobs"] for k in per_keyword.values()),
+            "unique_jobs": len(listed),
+            "relevant_jobs": len(relevant),
+            "details": details,
+        }
+        common.write_json(part.path / "_manifest.json", manifest)
+        part.commit()
     return manifest
 
 

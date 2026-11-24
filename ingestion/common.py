@@ -51,17 +51,46 @@ def get_with_retries(client: httpx.Client, url: str, params: dict | None = None)
     raise RuntimeError("unreachable")
 
 
-def reset_partition(source: str, run_date: date, raw_root: Path | None = None) -> Path:
-    """Return an empty data/raw/<source>/dt=<date>/ folder.
+class SourceUnavailable(RuntimeError):
+    """The site answered, but with no usable data (blocked, throttled or layout changed)."""
 
-    Deleting the partition first makes every run idempotent: a re-run on the same
-    day fully replaces that day's files and never leaves stale ones behind.
+
+class Partition:
+    """A day partition written atomically: data/raw/<source>/dt=<date>/.
+
+    Files are written to a temporary sibling folder (`path`). `commit()` swaps it in
+    place of the previous partition, so a re-run on the same day fully replaces that
+    day's files (idempotent, no stale files). If the run fails or is never committed,
+    the temporary folder is dropped and the previous partition stays untouched: a
+    throttled or broken run can never overwrite good data with an empty snapshot.
+
+        with Partition("topdev", run_date) as part:
+            write_json(part.path / "x.json", ...)
+            part.commit()
     """
-    out_dir = (raw_root or RAW_ROOT) / source / f"dt={run_date.isoformat()}"
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
-    return out_dir
+
+    def __init__(self, source: str, run_date: date, raw_root: Path | None = None):
+        self.final = (raw_root or RAW_ROOT) / source / f"dt={run_date.isoformat()}"
+        # name must not match "dt=*", which the loaders read
+        self.path = self.final.with_name(f".tmp_{self.final.name}")
+        self.committed = False
+
+    def __enter__(self) -> "Partition":
+        if self.path.exists():
+            shutil.rmtree(self.path)
+        self.path.mkdir(parents=True)
+        return self
+
+    def commit(self) -> Path:
+        if self.final.exists():
+            shutil.rmtree(self.final)
+        self.path.rename(self.final)
+        self.committed = True
+        return self.final
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if not self.committed and self.path.exists():
+            shutil.rmtree(self.path)
 
 
 def write_json(path: Path, obj) -> None:

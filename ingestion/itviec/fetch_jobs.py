@@ -73,34 +73,37 @@ def fetch_category(client: httpx.Client, category: str) -> list[str]:
 
 def run(run_date: date | None = None, raw_root: Path | None = None) -> dict:
     run_date = run_date or date.today()
-    out_dir = common.reset_partition(SOURCE, run_date, raw_root)
     started_at = datetime.now(timezone.utc)
     per_category = {}
     unique_slugs = set()
 
-    with common.make_client() as client:
+    with common.Partition(SOURCE, run_date, raw_root) as part, common.make_client() as client:
         for i, category in enumerate(CATEGORIES):
             if i > 0:
                 common.polite_pause()
             pages = fetch_category(client, category)
             n_jobs = 0
             for page_no, html in enumerate(pages, start=1):
-                common.write_text(out_dir / f"category={category}" / f"page_{page_no:03d}.html", html)
+                common.write_text(part.path / f"category={category}" / f"page_{page_no:03d}.html", html)
                 jobs = parse_job_cards(html)
                 n_jobs += len(jobs)
                 unique_slugs.update(job["job_slug"] for job in jobs if job["job_slug"])
             per_category[category] = {"pages": len(pages), "jobs": n_jobs}
 
-    manifest = {
-        "source": SOURCE,
-        "run_date": run_date.isoformat(),
-        "started_at": started_at.isoformat(),
-        "finished_at": datetime.now(timezone.utc).isoformat(),
-        "categories": per_category,
-        "total_rows": sum(c["jobs"] for c in per_category.values()),
-        "unique_jobs": len(unique_slugs),
-    }
-    common.write_json(out_dir / "_manifest.json", manifest)
+        if not unique_slugs:
+            raise common.SourceUnavailable("ITviec pages contained no jobs; keeping the previous partition")
+
+        manifest = {
+            "source": SOURCE,
+            "run_date": run_date.isoformat(),
+            "started_at": started_at.isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "categories": per_category,
+            "total_rows": sum(c["jobs"] for c in per_category.values()),
+            "unique_jobs": len(unique_slugs),
+        }
+        common.write_json(part.path / "_manifest.json", manifest)
+        part.commit()
     return manifest
 
 

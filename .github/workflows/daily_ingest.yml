@@ -15,6 +15,11 @@ on:
     # top of the hour queue behind everyone else's and were starting 7h late.
     - cron: "23 0 * * *"
   workflow_dispatch:       # allow manual runs from the Actions tab
+    inputs:
+      sources:
+        description: "Sources to scrape (space separated). Leave CareerLink out on a day it already ran."
+        default: "topdev careerlink"
+        required: false
 
 concurrency:
   group: daily-ingest
@@ -29,6 +34,10 @@ jobs:
   ingest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # The site is published whenever the data passed its tests, even if one source
+    # failed today (the job is still red, so the failure is emailed).
+    outputs:
+      site_ready: ${{ steps.upload.outcome }}
 
     # Throwaway warehouse used to validate the full history after each ingest.
     services:
@@ -50,6 +59,7 @@ jobs:
       WAREHOUSE_USER: radar
       WAREHOUSE_PASSWORD: radar
       WAREHOUSE_DB: radar
+      SOURCES: ${{ github.event.inputs.sources || 'topdev careerlink' }}
 
     steps:
       - name: Check out code
@@ -78,12 +88,12 @@ jobs:
       # Each source runs even if another source failed (one broken site must not
       # block the others), but nothing runs if the unit tests failed.
       - name: Ingest TopDev
-        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' && contains(env.SOURCES, 'topdev') }}
         run: python -m ingestion.topdev.fetch_jobs
 
       # ~10 search pages + new job pages only (5 s apart, capped, stops if throttled)
       - name: Ingest CareerLink
-        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' && contains(env.SOURCES, 'careerlink') }}
         timeout-minutes: 15
         run: python -m ingestion.careerlink.fetch_jobs
 
@@ -132,6 +142,7 @@ jobs:
         run: python -m publish.build_site --out _site
 
       - name: Upload site artifact
+        id: upload
         if: ${{ !cancelled() && steps.site.outcome == 'success' }}
         uses: actions/upload-pages-artifact@v5
         with:
@@ -139,7 +150,7 @@ jobs:
 
   deploy-site:
     needs: ingest
-    if: ${{ !cancelled() && needs.ingest.result == 'success' }}
+    if: ${{ !cancelled() && needs.ingest.outputs.site_ready == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write

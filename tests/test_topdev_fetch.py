@@ -60,6 +60,21 @@ def test_fetch_page_does_not_retry_on_client_error():
     assert calls["n"] == 1
 
 
+def test_empty_run_keeps_previous_partition(tmp_path, monkeypatch):
+    monkeypatch.setattr(fetch_jobs, "KEYWORDS", ["data"])
+    partition = tmp_path / "topdev" / "dt=2026-01-02"
+    partition.mkdir(parents=True)
+    (partition / "_manifest.json").write_text("good", encoding="utf-8")
+
+    real_client = httpx.Client
+    monkeypatch.setattr(common, "make_client", lambda: real_client(transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, json={"data": [], "meta": {"last_page": 1}}))))
+
+    with pytest.raises(common.SourceUnavailable):
+        fetch_jobs.run(run_date=date(2026, 1, 2), raw_root=tmp_path)
+    assert (partition / "_manifest.json").read_text(encoding="utf-8") == "good"
+
+
 def test_run_is_idempotent(tmp_path, monkeypatch):
     monkeypatch.setattr(fetch_jobs, "KEYWORDS", ["data", "AI"])
 

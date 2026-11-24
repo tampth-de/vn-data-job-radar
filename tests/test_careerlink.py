@@ -121,6 +121,29 @@ def test_circuit_breaker_stops_when_pages_come_back_empty(tmp_path, monkeypatch)
     assert manifest["details"]["saved"] == []
 
 
+def test_throttled_run_keeps_previous_partition(tmp_path, monkeypatch):
+    """Search pages served as empty shells must not overwrite a good snapshot."""
+    monkeypatch.setattr(fetch_jobs, "KEYWORDS", ["data"])
+    partition = tmp_path / "careerlink" / "dt=2026-01-01"
+    partition.mkdir(parents=True)
+    (partition / "_manifest.json").write_text('{"unique_jobs": 48}', encoding="utf-8")
+    job_requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/vieclam/list":
+            return httpx.Response(200, text="<html><head><title>CareerLink</title></head><body></body></html>")
+        job_requests.append(request.url.path)
+        return httpx.Response(200, text=job_page(POSTING))
+
+    patch_client(monkeypatch, handler)
+    with pytest.raises(common.SourceUnavailable):
+        fetch_jobs.run(run_date=date(2026, 1, 1), raw_root=tmp_path)
+
+    assert (partition / "_manifest.json").read_text(encoding="utf-8") == '{"unique_jobs": 48}'
+    assert not list((tmp_path / "careerlink").glob(".tmp_*"))   # temp folder cleaned up
+    assert job_requests == []                                     # no job page requested
+
+
 def test_detail_fetches_are_capped_per_run(tmp_path, monkeypatch):
     monkeypatch.setattr(fetch_jobs, "KEYWORDS", ["data"])
     monkeypatch.setattr(fetch_jobs, "MAX_DETAILS_PER_RUN", 4)
