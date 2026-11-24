@@ -64,10 +64,11 @@ def ensure_docker() -> None:
     raise StepFailed("Docker engine is not running. Start Docker Desktop and try again.")
 
 
-def dbt_executable() -> str:
-    scripts = Path(sys.executable).parent
-    candidate = scripts / ("dbt.exe" if platform.system() == "Windows" else "dbt")
-    return str(candidate) if candidate.exists() else "dbt"
+def dbt_command() -> list[str]:
+    # Run dbt through the Python interpreter instead of the `dbt.exe` launcher that pip
+    # generates: Windows Smart App Control can block that unsigned launcher, while
+    # python.exe itself is signed.
+    return [sys.executable, "-c", "from dbt.cli.main import cli; cli()"]
 
 
 def step_containers() -> None:
@@ -91,7 +92,7 @@ def step_load() -> None:
 
 
 def step_dbt() -> None:
-    run([dbt_executable(), "build", "--profiles-dir", "."], cwd=DBT_DIR)
+    run([*dbt_command(), "build", "--profiles-dir", "."], cwd=DBT_DIR)
 
 
 def step_dashboard(rebuild: bool) -> str:
