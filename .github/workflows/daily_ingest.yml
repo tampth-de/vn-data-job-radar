@@ -20,6 +20,11 @@ concurrency:
   group: daily-ingest
   cancel-in-progress: false
 
+# Least privilege: the ingest job only reads this repo (it writes to the data repo
+# through its own deploy key); only the deploy job may publish to GitHub Pages.
+permissions:
+  contents: read
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
@@ -118,3 +123,31 @@ jobs:
       - name: Publish daily summary
         if: ${{ !cancelled() && steps.dbt.outcome == 'success' }}
         run: python -m load.summary >> "$GITHUB_STEP_SUMMARY"
+
+      # Public dashboard: aggregates only (no titles, companies or links), see publish/.
+      # Only built when every data test passed, so a bad day never reaches the site.
+      - name: Build public site
+        id: site
+        if: ${{ !cancelled() && steps.dbt.outcome == 'success' }}
+        run: python -m publish.build_site --out _site
+
+      - name: Upload site artifact
+        if: ${{ !cancelled() && steps.site.outcome == 'success' }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy-site:
+    needs: ingest
+    if: ${{ !cancelled() && needs.ingest.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

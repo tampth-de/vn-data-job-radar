@@ -77,6 +77,25 @@ def test_near_misses_are_not_merged(jobs):
     assert jobs["topdev:1001"]["posting_key"] == "topdev:1001"
 
 
+def test_public_site_publishes_aggregates_only(tmp_path):
+    import json
+
+    from publish.build_site import build
+
+    html = build(tmp_path).read_text(encoding="utf-8")
+    data = json.loads((tmp_path / "data.json").read_text(encoding="utf-8"))
+
+    (active,) = query("select count(distinct posting_key) from marts.fct_job_postings"
+                      " where is_active and is_data_ai_role")[0]
+    assert data["headline"]["active_postings"] == active
+    assert {s["source"] for s in data["sources"]} == {"topdev", "careerlink"}
+    # listings must never leave the warehouse: no titles, companies or job links
+    for private in ["Beta Retail", "Epsilon Analytics", "Senior Data Engineer (Spark, Airflow)",
+                    "topdev.vn/viec-lam", "careerlink.vn/tim-viec-lam"]:
+        assert private not in html
+        assert private not in json.dumps(data, ensure_ascii=False)
+
+
 def test_skill_demand_counts_postings_not_rows():
     (jobs_that_day,) = query(
         "select distinct jobs_that_day from marts.agg_skill_demand_daily where snapshot_date = '2026-01-02'"

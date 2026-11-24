@@ -3,6 +3,9 @@
 [![CI](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/ci.yml)
 [![Daily ingest](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/daily_ingest.yml/badge.svg)](https://github.com/tampth-de/vn-data-job-radar/actions/workflows/daily_ingest.yml)
 
+**Live dashboard: [tampth-de.github.io/vn-data-job-radar](https://tampth-de.github.io/vn-data-job-radar/)**
+(rebuilt every morning; aggregates only)
+
 An end-to-end batch data pipeline that tracks the Data & AI job market in Vietnam:
 which skills are in demand, how salaries vary by seniority and city, and how the
 market changes week over week.
@@ -34,7 +37,7 @@ staging.*       one model per source, typed columns, one row per job per day
 intermediate.*  sources unioned (job_key = source:id), role classification, skills
 marts.*         fct_job_postings, dim_job_history, bridge_job_skills, agg_skill_demand_daily
         ▼
-Metabase dashboards (defined in code)
+Metabase dashboards (local, defined in code)  ·  public static page (GitHub Pages, aggregates only)
 ```
 
 Runtime: PostgreSQL 17 + Metabase in Docker Compose · Transformations: dbt Core · Tests: pytest + dbt tests
@@ -78,7 +81,17 @@ Two data problems worth noting:
   employers ("CareerLink's Client") never match. Every count uses
   `count(distinct posting_key)`.
 
-## Dashboard
+## Public dashboard (GitHub Pages)
+
+[publish/build_site.py](publish/build_site.py) turns the marts into one static page
+([publish/template.html](publish/template.html), Chart.js) after the daily `dbt build`
+passes, and GitHub Actions deploys it to Pages. Only **aggregates** leave the warehouse
+(counts, shares, averages); an end-to-end test fails if a job title, company name or
+job link ever appears in the page. Charts follow one set of rules: single-hue bars with
+values at the tip, hairline grids, a crosshair tooltip on the time series, a table
+view under every chart, a selected dark palette, and a layout that fits a 390px phone.
+
+## Local dashboards (Metabase)
 
 A Metabase dashboard is created **from code** ([dashboard/cards.py](dashboard/cards.py),
 [dashboard/setup_metabase.py](dashboard/setup_metabase.py)): every card's SQL, chart type
@@ -127,7 +140,8 @@ commercially, and only aggregated statistics are published, credited to the sour
 ingestion/          Scrapers, one sub-package per source + shared helpers (common.py)
 load/               Loads raw files into the warehouse `raw` schema
 dbt/                dbt project: staging, intermediate, marts, seeds, macros, tests
-dashboard/          Metabase dashboard as code
+dashboard/          Metabase dashboards as code (local)
+publish/            Public static site (GitHub Pages)
 tests/              Unit tests (pytest, no network)
 docs/               Source survey and design notes
 data/               Local clone of the private data repo (git-ignored)
@@ -198,5 +212,6 @@ masked salary ranges, skill normalization).
 - [x] Metabase dashboard as code
 - [x] Second source: CareerLink (JSON-LD, exact salaries, skills from descriptions), after reviewing 9 boards
 - [x] Cross-source deduplication (normalized company + title similarity, one-to-one matching, `posting_key`)
-- [ ] Dashboard screenshots once 2+ weeks of history exist
+- [x] Public dashboard on GitHub Pages, rebuilt daily (aggregates only)
+- [ ] Dashboard screenshots in this README once 2+ weeks of history exist
 - [ ] Airflow orchestration

@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vietnam Data/AI Job Radar</title>
+<meta name="description" content="Daily snapshot of the Data and AI job market in Vietnam: skills in demand, roles, salaries and locations. Aggregated from public job listings.">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --hover-wash: rgba(11, 11, 11, 0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --hover-wash: rgba(255, 255, 255, 0.05);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --hover-wash: rgba(255, 255, 255, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--series-1); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; justify-content: space-between; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .lede { color: var(--text-secondary); margin: 0; max-width: 62ch; }
+  .meta { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
+  .theme-toggle {
+    font: inherit; font-size: 13px; color: var(--text-secondary);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .theme-toggle:hover { background: var(--hover-wash); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 18px 14px;
+    min-width: 0;
+  }
+  .headline { display: grid; gap: 12px; margin: 24px 0 12px;
+    grid-template-columns: minmax(0, 1.3fr) repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+  .hero .value { font-size: 56px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+  .tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; }
+  .label { color: var(--text-secondary); font-size: 13px; }
+  .hint { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+  @media (max-width: 720px) {
+    .headline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hero { grid-column: 1 / -1; }
+  }
+
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+  .wide { grid-column: 1 / -1; }
+  h2 { font-size: 15px; margin: 0; font-weight: 600; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin: 2px 0 12px; }
+  .chart { position: relative; width: 100%; }
+  details { margin-top: 10px; font-size: 13px; }
+  summary { color: var(--text-secondary); cursor: pointer; width: fit-content; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  th, td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--grid); }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; }
+  .table-scroll { overflow-x: auto; }
+
+  section.notes { margin-top: 28px; color: var(--text-secondary); font-size: 14px; }
+  section.notes h2 { color: var(--text-primary); margin-bottom: 6px; }
+  section.notes ul { padding-left: 18px; margin: 6px 0; }
+  footer { margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Vietnam Data/AI Job Radar</h1>
+      <p class="lede">What the Data &amp; AI job market in Vietnam is asking for today: roles, skills,
+        salaries and locations, rebuilt every morning from public job listings.</p>
+      <div class="meta" id="meta"></div>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch colour theme">Theme: auto</button>
+  </header>
+
+  <div class="headline">
+    <div class="card hero">
+      <div class="label">Active Data/AI job postings</div>
+      <div class="value" id="hero-value">–</div>
+      <div class="hint" id="hero-hint"></div>
+    </div>
+    <div class="card tile"><div class="label">Companies hiring</div><div class="value" id="t-companies">–</div></div>
+    <div class="card tile"><div class="label">New in the last 7 days</div><div class="value" id="t-new">–</div></div>
+    <div class="card tile"><div class="label">Search results that are real Data/AI jobs</div><div class="value" id="t-relevant">–</div></div>
+    <div class="card tile"><div class="label">Days a closed posting stayed online (avg)</div><div class="value" id="t-days">–</div><div class="hint" id="t-days-hint"></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card wide">
+      <h2>Active Data/AI postings per day</h2>
+      <p class="sub">By source. An ad posted on both boards is counted once overall, and once in each source's line.</p>
+      <div class="chart" style="height: 260px"><canvas id="c-daily" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-daily"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Most requested skills</h2>
+      <p class="sub">Share of active Data/AI postings asking for each skill (latest day). Aliases merged: "pyspark" counts as Spark.</p>
+      <div class="chart" id="h-skills"><canvas id="c-skills" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-skills"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Roles</h2>
+      <p class="sub">Active postings by role family, classified from titles and the boards' own job categories.</p>
+      <div class="chart" id="h-roles"><canvas id="c-roles" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-roles"></div></details>
+
+      <h2 style="margin-top: 22px">Skill areas</h2>
+      <p class="sub">Postings asking for at least one skill in each area (latest day).</p>
+      <div class="chart" id="h-categories"><canvas id="c-categories" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-categories"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Salary range by role</h2>
+      <p class="sub">Average monthly range, million VND, over postings that show a salary. CareerLink shows exact
+        figures; TopDev masks them ("1*******" = 10–19.99M), so its ranges are the widest possible.</p>
+      <div class="chart" id="h-salary"><canvas id="c-salary" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-salary"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Where the jobs are</h2>
+      <p class="sub">Active postings by province (a posting listing two cities counts in both).</p>
+      <div class="chart" id="h-provinces"><canvas id="c-provinces" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-provinces"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Experience asked</h2>
+      <p class="sub">Minimum years of experience in active postings.</p>
+      <div class="chart" id="h-experience"><canvas id="c-experience" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-experience"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Work mode</h2>
+      <p class="sub">On site, remote or hybrid, as stated in the posting.</p>
+      <div class="chart" id="h-workmode"><canvas id="c-workmode" role="img"></canvas></div>
+      <details><summary>Show table</summary><div class="table-scroll" id="t-workmode"></div></details>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h2>How this is made</h2>
+    <ul>
+      <li><strong>Sources:</strong> <span id="sources-list"></span>, collected once a day at a low request
+        rate after reviewing each site's robots.txt and terms of use. Only aggregates are published here:
+        no job titles, companies or links.</li>
+      <li><strong>What counts as Data/AI:</strong> keyword search on job boards is noisy (sales posts offering
+        "data có sẵn" match "data"), so each posting is classified from its title and the board's own job category.</li>
+      <li><strong>One ad, one count:</strong> the same ad on two boards is matched by normalized company name and title
+        similarity and counted once.</li>
+      <li><strong>Pipeline:</strong> Python ingestion → PostgreSQL → dbt (staging, intermediate, marts, 70 data tests) →
+        this page, rebuilt by GitHub Actions every morning. Code: <a id="repo-link" href="#">GitHub</a>.</li>
+    </ul>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script id="data" type="application/json">__DATA_JSON__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("data").textContent);
+  var fmt = new Intl.NumberFormat("en-US");
+  var SOURCE_NAMES = { topdev: "TopDev", careerlink: "CareerLink" };
+  var SOURCE_SITES = { topdev: "https://topdev.vn", careerlink: "https://www.careerlink.vn" };
+  var ROLE_NAMES = {
+    data_engineer: "Data engineer", data_analyst: "Data analyst", data_scientist: "Data scientist",
+    ai_engineer: "AI engineer", data_ai_lead: "Data/AI lead", database_admin: "Database admin",
+    data_governance: "Data governance", data_annotation: "Data annotation"
+  };
+  // short names: y-axis labels must fit a 390px phone without clipping
+  var CATEGORY_NAMES = {
+    language: "Languages", database: "Databases", big_data: "Data pipelines",
+    cloud: "Cloud", devops: "DevOps", bi_analytics: "BI & analytics", ml_ai: "ML & AI",
+    web: "Web", soft_skill: "English", business: "Business"
+  };
+  function roleName(r) { return ROLE_NAMES[r] || r; }
+  function setText(id, text) { document.getElementById(id).textContent = text; }
+
+  // ---------- text: header, tiles, notes (textContent only: data is untrusted) ----------
+  var h = DATA.headline, span = DATA.span;
+  setText("hero-value", fmt.format(h.active_postings));
+  setText("hero-hint", "Out of " + fmt.format(h.postings_tracked) + " Data/AI postings seen since " + span.first_day);
+  setText("t-companies", fmt.format(h.companies_hiring));
+  setText("t-new", fmt.format(h.new_last_7_days));
+  setText("t-relevant", h.pct_relevant == null ? "–" : h.pct_relevant + "%");
+  setText("t-days", h.avg_days_listed_closed == null ? "–" : String(h.avg_days_listed_closed));
+  setText("t-days-hint", h.closed_postings ? "over " + h.closed_postings + " closed postings" : "no closed posting yet");
+  setText("meta", "Updated " + DATA.generated_at.replace("T", " ").replace("+00:00", " UTC") +
+    " · " + span.days_tracked + " days of data (" + span.first_day + " to " + span.last_day + ")");
+  document.getElementById("repo-link").href = DATA.repo_url;
+
+  var list = document.getElementById("sources-list");
+  DATA.sources.forEach(function (s, i) {
+    if (i) list.appendChild(document.createTextNode(i === DATA.sources.length - 1 ? " and " : ", "));
+    var a = document.createElement("a");
+    a.href = SOURCE_SITES[s.source] || "#";
+    a.textContent = SOURCE_NAMES[s.source] || s.source;
+    list.appendChild(a);
+    list.appendChild(document.createTextNode(" (since " + s.since + ")"));
+  });
+  var footer = document.getElementById("footer");
+  footer.textContent = "Data © the original job boards and employers; aggregated statistics only. " +
+    "Independent portfolio project, not affiliated with TopDev or CareerLink.";
+
+  // ---------- table views ----------
+  function table(containerId, headers, rows, numericCols) {
+    var t = document.createElement("table");
+    var tr = document.createElement("tr");
+    headers.forEach(function (hd, i) {
+      var th = document.createElement("th");
+      th.textContent = hd;
+      if (numericCols.indexOf(i) >= 0) th.className = "num";
+      tr.appendChild(th);
+    });
+    t.appendChild(tr);
+    rows.forEach(function (r) {
+      var row = document.createElement("tr");
+      r.forEach(function (cell, i) {
+        var td = document.createElement("td");
+        td.textContent = cell == null ? "–" : cell;
+        if (numericCols.indexOf(i) >= 0) td.className = "num";
+        row.appendChild(td);
+      });
+      t.appendChild(row);
+    });
+    document.getElementById(containerId).appendChild(t);
+  }
+
+  // ---------- charts ----------
+  if (!window.Chart) { return; }   // CDN blocked: numbers and tables above still work
+  var charts = [];
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function tokens() {
+    return {
+      s1: css("--series-1"), s2: css("--series-2"), surface: css("--surface"),
+      primary: css("--text-primary"), secondary: css("--text-secondary"),
+      muted: css("--text-muted"), grid: css("--grid"), axis: css("--axis")
+    };
+  }
+
+  // value at the bar tip, in text ink (never the series color)
+  var tipLabels = {
+    id: "tipLabels",
+    afterDatasetsDraw: function (chart, _args, opts) {
+      if (!opts || !opts.format) return;
+      var ctx = chart.ctx, t = tokens();
+      ctx.save();
+      ctx.font = "12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+      ctx.fillStyle = t.secondary;
+      ctx.textBaseline = "middle";
+      chart.data.datasets.forEach(function (ds, di) {
+        chart.getDatasetMeta(di).data.forEach(function (bar, i) {
+          var text = opts.format(ds.data[i], i);
+          if (text) ctx.fillText(text, bar.x + 6, bar.y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+  // vertical hairline that follows the pointer on the line chart
+  var crosshair = {
+    id: "crosshair",
+    afterDatasetsDraw: function (chart) {
+      var active = chart.tooltip && chart.tooltip.getActiveElements();
+      if (!active || !active.length) return;
+      var x = active[0].element.x, area = chart.chartArea, ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = tokens().axis;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  function baseOptions(t) {
+    return {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: t.surface, titleColor: t.secondary, bodyColor: t.primary,
+          borderColor: t.axis, borderWidth: 1, padding: 10, cornerRadius: 8,
+          titleFont: { weight: "normal" }, bodyFont: { weight: "600" }, displayColors: false
+        }
+      }
+    };
+  }
+
+  function hbar(canvasId, holderId, labels, values, opts) {
+    var t = tokens();
+    var holder = document.getElementById(holderId);
+    holder.style.height = Math.max(120, labels.length * 30 + 40) + "px";
+    var o = baseOptions(t);
+    o.indexAxis = "y";
+    o.layout = { padding: { right: opts.tipPad || 44 } };
+    o.scales = {
+      x: { beginAtZero: true, grid: { color: t.grid, drawTicks: false }, border: { display: false },
+           ticks: { color: t.muted, precision: 0, padding: 6, callback: opts.tick } },
+      y: { grid: { display: false }, border: { color: t.axis },
+           ticks: { color: t.secondary, padding: 6, autoSkip: false } }
+    };
+    o.plugins.tooltip.callbacks = { label: opts.tooltip };
+    o.plugins.tipLabels = { format: opts.tip };
+    var c = new Chart(document.getElementById(canvasId), {
+      type: "bar",
+      data: { labels: labels, datasets: [{
+        data: values, backgroundColor: t.s1, hoverBackgroundColor: t.s1,
+        borderRadius: 4, borderSkipped: "start", maxBarThickness: 24, categoryPercentage: 0.8, barPercentage: 0.9
+      }] },
+      options: o,
+      plugins: [tipLabels]
+    });
+    document.getElementById(canvasId).setAttribute("aria-label", opts.aria);
+    charts.push(c);
+  }
+
+  function drawAll() {
+    charts.forEach(function (c) { c.destroy(); });
+    charts = [];
+    var t = tokens();
+
+    // daily trend: one line per source, legend with line keys, crosshair + all-series tooltip
+    var days = []; DATA.daily_total.forEach(function (d) { days.push(d.day); });
+    var sourceKeys = DATA.sources.map(function (s) { return s.source; });
+    var colors = [t.s1, t.s2];
+    var datasets = sourceKeys.map(function (src, i) {
+      var bySrc = {}; DATA.daily.forEach(function (d) { if (d.source === src) bySrc[d.day] = d.postings; });
+      return {
+        label: SOURCE_NAMES[src] || src,
+        data: days.map(function (d) { return d in bySrc ? bySrc[d] : null; }),
+        borderColor: colors[i % 2], backgroundColor: colors[i % 2],
+        borderWidth: 2, pointHoverRadius: 4, pointHoverBorderWidth: 2,
+        // a value with no neighbour (e.g. a source's first day) has no line: draw it as a dot
+        pointRadius: function (ctx) {
+          var d = ctx.dataset.data, i = ctx.dataIndex;
+          return d[i] != null && d[i - 1] == null && d[i + 1] == null ? 4 : 0;
+        },
+        pointBorderColor: t.surface, pointBorderWidth: 2,
+        pointHoverBorderColor: t.surface, borderJoinStyle: "round", borderCapStyle: "round",
+        tension: 0, spanGaps: false
+      };
+    });
+    var o = baseOptions(t);
+    o.interaction = { mode: "index", intersect: false };
+    o.plugins.legend = { display: true, position: "top", align: "start",
+      // a short 2px stroke in the series color as the key (legends mirror the mark: a line)
+      labels: { color: t.secondary, boxWidth: 18, boxHeight: 2, padding: 14 } };
+    o.plugins.tooltip.displayColors = true;
+    o.plugins.tooltip.usePointStyle = true;
+    o.plugins.tooltip.callbacks = {
+      labelPointStyle: function () { return { pointStyle: "line", rotation: 0 }; },
+      label: function (ctx) { return ctx.parsed.y == null ? null : fmt.format(ctx.parsed.y) + "  " + ctx.dataset.label; }
+    };
+    o.scales = {
+      x: { grid: { display: false }, border: { color: t.axis }, ticks: { color: t.muted, maxRotation: 0, autoSkipPadding: 16 } },
+      y: { beginAtZero: true, grid: { color: t.grid, drawTicks: false }, border: { display: false },
+           ticks: { color: t.muted, precision: 0, padding: 6 } }
+    };
+    charts.push(new Chart(document.getElementById("c-daily"), {
+      type: "line", data: { labels: days, datasets: datasets }, options: o, plugins: [crosshair]
+    }));
+    document.getElementById("c-daily").setAttribute("aria-label",
+      "Line chart of active Data/AI postings per day by source, from " + span.first_day + " to " + span.last_day);
+
+    hbar("c-skills", "h-skills",
+      DATA.skills.map(function (s) { return s.skill; }), DATA.skills.map(function (s) { return s.pct; }),
+      { tip: function (v) { return v + "%"; }, tick: function (v) { return v + "%"; },
+        tooltip: function (ctx) { var s = DATA.skills[ctx.dataIndex]; return s.pct + "% of postings (" + s.postings + ")"; },
+        aria: "Bar chart: share of active Data/AI postings requiring each of the top 15 skills" });
+
+    hbar("c-roles", "h-roles",
+      DATA.roles.map(function (r) { return roleName(r.role); }), DATA.roles.map(function (r) { return r.postings; }),
+      { tip: function (v) { return fmt.format(v); },
+        tooltip: function (ctx) { return fmt.format(ctx.parsed.x) + " postings"; },
+        aria: "Bar chart: active Data/AI postings by role family" });
+
+    hbar("c-categories", "h-categories",
+      DATA.skill_categories.map(function (c) { return CATEGORY_NAMES[c.category] || c.category; }),
+      DATA.skill_categories.map(function (c) { return c.postings; }),
+      { tip: function (v) { return fmt.format(v); },
+        tooltip: function (ctx) { return fmt.format(ctx.parsed.x) + " postings"; },
+        aria: "Bar chart: postings asking for at least one skill in each skill area" });
+
+    // salary: floating bar from average minimum to average maximum
+    hbar("c-salary", "h-salary",
+      DATA.salary.map(function (s) { return roleName(s.role) + " (" + s.with_salary + ")"; }),
+      DATA.salary.map(function (s) { return [s.avg_min_m == null ? s.avg_max_m : s.avg_min_m, s.avg_max_m]; }),
+      { tipPad: 64,
+        tip: function (v) { return v[0] === v[1] ? "≤ " + v[1] + "M" : v[0] + "–" + v[1] + "M"; },
+        tick: function (v) { return v + "M"; },
+        tooltip: function (ctx) { var s = DATA.salary[ctx.dataIndex];
+          return (s.avg_min_m == null ? "up to " + s.avg_max_m : s.avg_min_m + "–" + s.avg_max_m) +
+                 " M VND/month · " + s.with_salary + " postings with a salary"; },
+        aria: "Range chart: average monthly salary range by role in million VND" });
+
+    hbar("c-provinces", "h-provinces",
+      DATA.provinces.map(function (p) { return p.province; }), DATA.provinces.map(function (p) { return p.postings; }),
+      { tip: function (v) { return fmt.format(v); },
+        tooltip: function (ctx) { return fmt.format(ctx.parsed.x) + " postings"; },
+        aria: "Bar chart: active Data/AI postings by province" });
+
+    hbar("c-experience", "h-experience",
+      DATA.experience.map(function (e) { return e.experience; }), DATA.experience.map(function (e) { return e.postings; }),
+      { tip: function (v) { return fmt.format(v); },
+        tooltip: function (ctx) { return fmt.format(ctx.parsed.x) + " postings"; },
+        aria: "Bar chart: minimum years of experience asked" });
+
+    hbar("c-workmode", "h-workmode",
+      DATA.work_mode.map(function (w) { return w.work_mode.charAt(0).toUpperCase() + w.work_mode.slice(1); }),
+      DATA.work_mode.map(function (w) { return w.postings; }),
+      { tip: function (v) { return fmt.format(v); },
+        tooltip: function (ctx) { return fmt.format(ctx.parsed.x) + " postings"; },
+        aria: "Bar chart: active postings by work mode" });
+  }
+
+  // tables (built once)
+  table("t-daily", ["Day"].concat(DATA.sources.map(function (s) { return SOURCE_NAMES[s.source] || s.source; })).concat(["All (deduplicated)"]),
+    DATA.daily_total.map(function (d) {
+      return [d.day].concat(DATA.sources.map(function (s) {
+        var hit = DATA.daily.filter(function (x) { return x.day === d.day && x.source === s.source; })[0];
+        return hit ? hit.postings : null;
+      })).concat([d.postings]);
+    }), [1, 2, 3]);
+  table("t-skills", ["Skill", "Area", "Postings", "Share"],
+    DATA.skills.map(function (s) { return [s.skill, CATEGORY_NAMES[s.category] || s.category, s.postings, s.pct + "%"]; }), [2, 3]);
+  table("t-roles", ["Role", "Postings"], DATA.roles.map(function (r) { return [roleName(r.role), r.postings]; }), [1]);
+  table("t-categories", ["Skill area", "Postings"],
+    DATA.skill_categories.map(function (c) { return [CATEGORY_NAMES[c.category] || c.category, c.postings]; }), [1]);
+  table("t-salary", ["Role", "With salary", "Avg min (M VND)", "Avg max (M VND)"],
+    DATA.salary.map(function (s) { return [roleName(s.role), s.with_salary, s.avg_min_m, s.avg_max_m]; }), [1, 2, 3]);
+  table("t-provinces", ["Province", "Postings"], DATA.provinces.map(function (p) { return [p.province, p.postings]; }), [1]);
+  table("t-experience", ["Experience", "Postings"], DATA.experience.map(function (e) { return [e.experience, e.postings]; }), [1]);
+  table("t-workmode", ["Work mode", "Postings"], DATA.work_mode.map(function (w) { return [w.work_mode, w.postings]; }), [1]);
+
+  // theme: auto -> light -> dark; charts are redrawn from the CSS tokens of the chosen mode
+  var themes = ["auto", "light", "dark"], themeIdx = 0;
+  try { var saved = localStorage.getItem("radar-theme"); if (saved) themeIdx = Math.max(0, themes.indexOf(saved)); } catch (e) {}
+  function applyTheme() {
+    var th = themes[themeIdx];
+    if (th === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", th);
+    document.getElementById("theme-toggle").textContent = "Theme: " + th;
+    try { localStorage.setItem("radar-theme", th); } catch (e) {}
+    drawAll();
+  }
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    themeIdx = (themeIdx + 1) % themes.length; applyTheme();
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onChange = function () { if (themes[themeIdx] === "auto") drawAll(); };
+    if (mq.addEventListener) mq.addEventListener("change", onChange); else if (mq.addListener) mq.addListener(onChange);
+  }
+  applyTheme();
+})();
+</script>
+</body>
+</html>
